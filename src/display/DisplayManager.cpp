@@ -444,21 +444,67 @@ ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface
   }
   
   // Cyrillic: U+0400–U+04FF
-  // Slots 1-255 take indices 0-254. Cyrillic starts at index 255.
   if (codepoint >= 0x0400 && codepoint <= 0x04FF) {
     size_t cyrillicIndex = codepoint - 0x0400;  // 0-255
+    // Latin slots 1-255 map to indices 0-254 in glyph array
     size_t glyphIndex = 254 + cyrillicIndex;    // offset by Latin slots
-    // Use serif font for now (Atkinson doesn't have Cyrillic)
-    return serifGlyphForByte(glyphIndex < 256 ? static_cast<uint8_t>(glyphIndex + 1) : '?');
+    
+    switch (typeface) {
+      case DisplayManager::ReaderTypeface::OpenDyslexic: {
+        if (glyphIndex < (kEmbeddedOpenDyslexicLastCyrillic - kEmbeddedOpenDyslexicFirstCyrillic + 1) + 254) {
+          const auto& g = kEmbeddedOpenDyslexicGlyphs[glyphIndex];
+          return {kEmbeddedOpenDyslexicBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedOpenDyslexicHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
+        if (glyphIndex < (kEmbeddedAtkinsonLastCyrillic - kEmbeddedAtkinsonFirstCyrillic + 1) + 254) {
+          const auto& g = kEmbeddedAtkinsonGlyphs[glyphIndex];
+          return {kEmbeddedAtkinsonBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedAtkinsonHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::Standard:
+      default: {
+        if (glyphIndex < (kEmbeddedSerifLastCyrillic - kEmbeddedSerifFirstCyrillic + 1) + 254) {
+          const auto& g = kEmbeddedSerifGlyphs[glyphIndex];
+          return {kEmbeddedSerifBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedSerifHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+    }
   }
   
-  // Greek: U+0370–U+03FF (but only specific glyphs exist, not full range)
-  // Greek comes after Cyrillic block
+  // Greek: U+0370–U+03FF
   if (codepoint >= 0x0370 && codepoint <= 0x03FF) {
-    // We only have the glyphs that are in GREEK_GLYPH_NAMES
-    size_t greekIndex = codepoint - 0x0370;  // rough offset
+    // Cyrillic block (256 chars) comes after Latin slots (254 glyphs)
+    size_t greekIndex = codepoint - 0x0370;  // 0-95
     size_t glyphIndex = 254 + 256 + greekIndex;  // after Latin + Cyrillic
-    return serifGlyphForByte(glyphIndex < 256 ? static_cast<uint8_t>(glyphIndex + 1) : '?');
+    
+    switch (typeface) {
+      case DisplayManager::ReaderTypeface::OpenDyslexic: {
+        if (glyphIndex < (kEmbeddedOpenDyslexicLastGreek - kEmbeddedOpenDyslexicFirstGreek + 1) + 254 + 256) {
+          const auto& g = kEmbeddedOpenDyslexicGlyphs[glyphIndex];
+          return {kEmbeddedOpenDyslexicBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedOpenDyslexicHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
+        if (glyphIndex < (kEmbeddedAtkinsonLastGreek - kEmbeddedAtkinsonFirstGreek + 1) + 254 + 256) {
+          const auto& g = kEmbeddedAtkinsonGlyphs[glyphIndex];
+          return {kEmbeddedAtkinsonBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedAtkinsonHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::Standard:
+      default: {
+        if (glyphIndex < (kEmbeddedSerifLastGreek - kEmbeddedSerifFirstGreek + 1) + 254 + 256) {
+          const auto& g = kEmbeddedSerifGlyphs[glyphIndex];
+          return {kEmbeddedSerifBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedSerifHeight};
+        }
+        return serifGlyphForByte('?');
+      }
+    }
   }
   
   // Unknown codepoint
