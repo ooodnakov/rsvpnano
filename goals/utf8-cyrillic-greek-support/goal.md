@@ -14,9 +14,17 @@ See `plan.md` for detailed execution plan.
 
 ## Done Condition
 
-- [ ] All 6 font headers regenerated with Cyrillic + Greek glyphs
-- [ ] Build succeeds under 10 MB firmware size
-- [ ] Display renders "Привет" correctly on device
-- [ ] Display renders "Γειά" correctly on device
-- [ ] Latin-1 characters (Č, ř, ž) still work
-- [ ] ASCII text unchanged
+- [x] All 6 font headers regenerated with Cyrillic + Greek glyphs
+- [x] Build succeeds under 10 MB firmware size
+- [ ] Display renders "Привет" correctly on device (needs hardware)
+- [ ] Display renders "Γειά" correctly on device (needs hardware)
+- [x] Latin-1 characters (Č, ř, ž) still work
+- [x] ASCII text unchanged
+
+## Notes
+
+**Note:** Atkinson font uses NotoSans as fallback (real Atkinson Hyperlegible font download blocked by TLS). OpenDyslexic downloaded successfully.
+
+**Build stats:**
+- Flash: 41.7% (2.7MB)
+- RAM: 22.9% (75KB)

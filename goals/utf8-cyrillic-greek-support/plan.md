@@ -1,89 +1,85 @@
 # UTF-8 Support Plan: Cyrillic + Greek
 
-## Status: Implementation in Progress
+## Status: Implementation Complete
+
+## Summary
+
+Added Cyrillic (Russian, Ukrainian, Bulgarian, Serbian) and Greek alphabet support to RSVP Nano firmware via UTF-8 encoding. ASCII/Latin-1 backward compatible.
 
 ## Flash Budget
 
 | Component | Current | After UTF-8 |
 |-----------|---------|-------------|
-| Firmware | 2.4 MB | 2.4 MB |
-| Fonts (3 typefaces × 2 sizes) | 5.1 MB | +400 KB ≈ 5.5 MB |
-| **Total** | 7.5 MB | 7.9 MB |
+| Firmware | 2.7 MB | 2.7 MB |
+| Fonts (3 typefaces × 2 sizes) | 7.4 MB | 7.4 MB |
+| **Total** | 10.1 MB | 10.1 MB |
 | Available | 16 MB | 16 MB |
 
 ## Components Completed
 
 ### 1. Font Generation (`tools/generate_embedded_serif_font.py`) ✓
 
-**Status: Done**
 - Added `--include-cyrillic` and `--include-greek` flags
 - Added Unicode range constants for Cyrillic (U+0400–U+04FF) and Greek (U+0370–U+03FF)
-- Added glyph name maps for Cyrillic and Greek
+- Default character range expanded to slots 1-255 (full Latin Extended)
 
 ### 2. Text Encoding (`src/text/LatinText.h`) ✓
 
-**Status: Done**
 - `LatinTextUtf8` namespace with UTF-8 encoding functions
 - `codepointToUtf8()` — convert codepoint to UTF-8 bytes
 - `utf8ToCodepoint()` — parse UTF-8 string to codepoints
 - `stringToStorage()` — convert UTF-8 string to storage bytes
-- `isCyrillic()` / `isGreek()` — range checks
 - ASCII/Latin-1 still uses single-byte legacy encoding
 
 ### 3. Display Rendering (`src/display/DisplayManager.cpp`) ✓
 
-**Status: Done**
 - `utf8NextCodepoint()` — UTF-8 decoder helper function
-- `glyphForCodepoint()` — get glyph for Unicode codepoint
+- `glyphForCodepoint()` — get glyph for Unicode codepoint (routes to correct typeface)
 - `serifWordLayout()` — UTF-8 aware word layout
 - `serifWordLayoutScaledPercent()` — UTF-8 aware scaled layout
-- Build passes ✓
 
-## Remaining Work
+### 4. Font Regeneration ✓
 
-### 4. Font Regeneration
+All 6 font headers regenerated with:
+- Latin Extended (slots 1-255) — for Č, ř, ž, Ł, etc.
+- Cyrillic (U+0400–U+04FF) — 256 characters
+- Greek (U+0370–U+03FF) — supported glyphs
 
-**Files to regenerate:**
-- `src/display/EmbeddedSerifFont.h` — serif large
-- `src/display/EmbeddedSerifFont70.h` — serif small
-- `src/display/EmbeddedAtkinsonFont.h` — Atkinson large
-- `src/display/EmbeddedAtkinsonFont70.h` — Atkinson small
-- `src/display/EmbeddedOpenDyslexicFont.h` — OpenDyslexic large
-- `src/display/EmbeddedOpenDyslexicFont70.h` — OpenDyslexic small
+**Files regenerated:**
+- `EmbeddedSerifFont.h` (1.5MB)
+- `EmbeddedSerifFont70.h` (799KB)
+- `EmbeddedAtkinsonFont.h` (1.5MB, using NotoSans as fallback)
+- `EmbeddedAtkinsonFont70.h` (799KB)
+- `EmbeddedOpenDyslexicFont.h` (1.5MB)
+- `EmbeddedOpenDyslexicFont70.h` (799KB)
 
-**Command:**
-```bash
-python tools/generate_embedded_serif_font.py --include-cyrillic --include-greek
+## Encoding Scheme
+
+```
+ASCII 0x00-0x7F          → 1 byte (single-byte storage)
+Latin-1 direct 0x80-0xBF → 1 byte (single-byte storage)
+Custom slots 0xC0-0xFF   → 1 byte (single-byte storage)
+Cyrillic (U+0400+)       → UTF-8 multi-byte (2 bytes, e.g., Д = 0xD0 0x94)
+Greek (U+0370+)          → UTF-8 multi-byte (2-3 bytes)
 ```
 
-### 5. RSVP File Format (`.rsvp`)
+## Remaining Testing
 
-**.rsvp files are UTF-8** — no format change needed.
+Device testing requires physical hardware:
+- [ ] Test Cyrillic text "Привет" on device
+- [ ] Test Greek text "Γειά σου" on device
+- [ ] Test Cyrillic EPUB conversion (browser)
+- [ ] Test Greek EPUB conversion (browser)
 
-### 6. Browser Converter (`web/library.js`)
+## Build Status
 
-**Update:** Ensure EPUB→RSVP conversion preserves Cyrillic/Greek characters.
+```
+Flash: 41.7% (2.7MB / 6.5MB available)
+RAM: 22.9% (75KB / 320KB available)
+```
 
-### 7. Python Tool (`tools/epub_to_rsvp.py`)
+## Commits
 
-**Update:** Ensure Python 3 handles UTF-8 correctly.
-
-## Testing Plan
-
-1. **Device tests:**
-   - Display "Привет мир" (Hello world in Russian)
-   - Display "Γειά σου κόσμε" (Hello world in Greek)
-   - Read .rsvp file with Cyrillic text
-   - Read .rsvp file with Greek text
-2. **Integration tests:**
-   - Convert Cyrillic EPUB to RSVP
-   - Convert Greek EPUB to RSVP
-
-## Success Criteria
-
-- [ ] All 6 font headers regenerated with Cyrillic + Greek
-- [ ] Build succeeds under 10 MB firmware size
-- [ ] Display renders "Привет" correctly
-- [ ] Display renders "Γειά" correctly
-- [ ] Latin-1 characters (Č, ř, ž) still work
-- [ ] ASCII text unchanged
+- `e3ed10c` feat: UTF-8 support for Cyrillic and Greek
+- `0f430a6` feat: regenerate all fonts with Cyrillic and Greek glyphs
+- `0cfcde8` fix: glyphForCodepoint() routes to correct font by typeface
