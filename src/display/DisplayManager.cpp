@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstring>
 
 #include <esp_heap_caps.h>
@@ -408,6 +409,62 @@ ReaderGlyph glyphFor(char c, DisplayManager::ReaderTypeface typeface) {
 
 ReaderGlyph glyphFor(char c) { return glyphFor(c, currentReaderTypeface()); }
 
+// UTF-8 aware helper: get codepoint at position and advance
+// Returns (codepoint, bytesConsumed)
+inline std::pair<uint32_t, size_t> utf8NextCodepoint(const char* text, size_t len, size_t pos) {
+  if (pos >= len) return std::make_pair(0, 0);
+  const uint8_t* bytes = reinterpret_cast<const uint8_t*>(text + pos);
+  size_t remaining = len - pos;
+  
+  if (bytes[0] < 0x80) {
+    return std::make_pair(bytes[0], 1);
+  }
+  if ((bytes[0] & 0xE0) == 0xC0) {
+    if (remaining < 2 || (bytes[1] & 0xC0) != 0x80) return std::make_pair(bytes[0], 1);
+    return std::make_pair(((bytes[0] & 0x1F) << 6) | (bytes[1] & 0x3F), 2);
+  }
+  if ((bytes[0] & 0xF0) == 0xE0) {
+    if (remaining < 3 || (bytes[1] & 0xC0) != 0x80 || (bytes[2] & 0xC0) != 0x80) return std::make_pair(bytes[0], 1);
+    return std::make_pair(((bytes[0] & 0x0F) << 12) | ((bytes[1] & 0x3F) << 6) | (bytes[2] & 0x3F), 3);
+  }
+  if ((bytes[0] & 0xF8) == 0xF0) {
+    if (remaining < 4 || (bytes[1] & 0xC0) != 0x80 || (bytes[2] & 0xC0) != 0x80 || (bytes[3] & 0xC0) != 0x80) return std::make_pair(bytes[0], 1);
+    return std::make_pair(((bytes[0] & 0x07) << 18) | ((bytes[1] & 0x3F) << 12) | ((bytes[2] & 0x3F) << 6) | (bytes[3] & 0x3F), 4);
+  }
+  return std::make_pair(bytes[0], 1);  // Invalid
+}
+
+
+// Get glyph for Unicode codepoint (handles both single-byte and multi-byte)
+// Font glyph array layout: slots 1-255 (Latin Extended), then Cyrillic, then Greek
+ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface typeface) {
+  // Single-byte: ASCII, Latin-1, custom slots (slots 1-255)
+  if (codepoint <= 0xFF) {
+    return glyphFor(static_cast<char>(codepoint), typeface);
+  }
+  
+  // Cyrillic: U+0400–U+04FF
+  // Slots 1-255 take indices 0-254. Cyrillic starts at index 255.
+  if (codepoint >= 0x0400 && codepoint <= 0x04FF) {
+    size_t cyrillicIndex = codepoint - 0x0400;  // 0-255
+    size_t glyphIndex = 254 + cyrillicIndex;    // offset by Latin slots
+    // Use serif font for now (Atkinson doesn't have Cyrillic)
+    return serifGlyphForByte(glyphIndex < 256 ? static_cast<uint8_t>(glyphIndex + 1) : '?');
+  }
+  
+  // Greek: U+0370–U+03FF (but only specific glyphs exist, not full range)
+  // Greek comes after Cyrillic block
+  if (codepoint >= 0x0370 && codepoint <= 0x03FF) {
+    // We only have the glyphs that are in GREEK_GLYPH_NAMES
+    size_t greekIndex = codepoint - 0x0370;  // rough offset
+    size_t glyphIndex = 254 + 256 + greekIndex;  // after Latin + Cyrillic
+    return serifGlyphForByte(glyphIndex < 256 ? static_cast<uint8_t>(glyphIndex + 1) : '?');
+  }
+  
+  // Unknown codepoint
+  return serifGlyphForByte('?');
+}
+
 ReaderGlyph glyph70For(char c, DisplayManager::ReaderTypeface typeface) {
   const uint8_t value = LatinText::byteValue(c);
   uint8_t baseValue = 0;
@@ -605,27 +662,40 @@ TextLayoutMetrics serifWordLayout(const String &word, int focusIndex, int diviso
   int cursorX = 0;
   const bool trackFocus = focusIndex >= 0;
   const DisplayManager::ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  const size_t wordLen = word.length();
 
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(word[i], typeface);
+  while (pos < wordLen) {
+    auto result = utf8NextCodepoint(word.c_str(), wordLen, pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const int xOffset = scaledSignedAdvance(glyph.xOffset, divisor);
     const int width = glyph.width == 0 ? 0 : scaledAdvance(glyph.width, divisor);
     const int advance = scaledAdvance(glyph.xAdvance, divisor);
     const int left = cursorX + xOffset;
     updateTextLayoutBounds(layout, left, width);
 
-    if (trackFocus && static_cast<int>(i) == focusIndex) {
+    if (trackFocus && static_cast<int>(charIndex) == focusIndex) {
       layout.focusCenterX = width > 0 ? left + (width / 2) : cursorX + (advance / 2);
     }
 
-    int tracked = trackedAdvanceScaled(glyph.xAdvance, divisor, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(word[i + 1], typeface);
+
+    int tracked = trackedAdvanceScaled(glyph.xAdvance, divisor, charIndex, wordLen);
+    if (pos + consumed < wordLen) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), wordLen, pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          word[i], word[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedAdvance(nextGlyph.xOffset, divisor), scaledDesiredGap(divisor));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    charIndex++;
   }
 
   if (!trackFocus && layout.hasPixels) {
@@ -641,28 +711,40 @@ TextLayoutMetrics serifWordLayoutScaledPercent(const String &word, int focusInde
   int cursorX = 0;
   const bool trackFocus = focusIndex >= 0;
   const DisplayManager::ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  const size_t wordLen = word.length();
 
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(word[i], typeface);
+  while (pos < wordLen) {
+    auto result = utf8NextCodepoint(word.c_str(), wordLen, pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const int xOffset = scaledSignedPercent(glyph.xOffset, scalePercent);
     const int width = glyph.width == 0 ? 0 : scaledPercentDimension(glyph.width, scalePercent);
     const int advance = scaledPercentDimension(glyph.xAdvance, scalePercent);
     const int left = cursorX + xOffset;
     updateTextLayoutBounds(layout, left, width);
 
-    if (trackFocus && static_cast<int>(i) == focusIndex) {
+    if (trackFocus && static_cast<int>(charIndex) == focusIndex) {
       layout.focusCenterX = width > 0 ? left + (width / 2) : cursorX + (advance / 2);
     }
 
-    int tracked = trackedAdvanceScaledPercent(glyph.xAdvance, scalePercent, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(word[i + 1], typeface);
+    int tracked = trackedAdvanceScaledPercent(glyph.xAdvance, scalePercent, charIndex, wordLen);
+    if (pos + consumed < wordLen) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), wordLen, pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          word[i], word[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedPercent(nextGlyph.xOffset, scalePercent),
           scaledPercentDesiredGap(scalePercent));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    charIndex++;
   }
 
   if (!trackFocus && layout.hasPixels) {

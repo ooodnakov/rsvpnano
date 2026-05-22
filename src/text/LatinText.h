@@ -820,4 +820,177 @@ inline uint8_t fallbackAsciiByte(uint8_t value) {
   }
 }
 
+// UTF-8 support for Cyrillic and Greek
+namespace LatinTextUtf8 {
+
+// Escape prefix for multi-byte UTF-8 sequences
+constexpr uint8_t kEscapePrefix = 0xF0;
+
+// Check if byte is escape prefix for UTF-8 sequence
+inline bool isEscapeByte(uint8_t value) {
+  return value >= kEscapePrefix;
+}
+
+// Check if byte is continuation byte of UTF-8 sequence
+inline bool isUtf8ContinuationByte(uint8_t value) {
+  return (value & 0xC0) == 0x80;
+}
+
+// Get UTF-8 sequence length from first byte
+inline uint8_t utf8SequenceLength(uint8_t firstByte) {
+  if ((firstByte & 0x80) == 0x00) return 1;  // ASCII
+  if ((firstByte & 0xE0) == 0xC0) return 2;  // 2-byte
+  if ((firstByte & 0xF0) == 0xE0) return 3;  // 3-byte
+  if ((firstByte & 0xF8) == 0xF0) return 4;  // 4-byte
+  return 1;  // Invalid, treat as single byte
+}
+
+// Cyrillic ranges (U+0400–U+04FF)
+constexpr uint32_t kFirstCyrillic = 0x0400;
+constexpr uint32_t kLastCyrillic = 0x04FF;
+
+// Greek ranges (U+0370–U+03FF)
+constexpr uint32_t kFirstGreek = 0x0370;
+constexpr uint32_t kLastGreek = 0x03FF;
+
+// Check if codepoint is Cyrillic
+inline bool isCyrillic(uint32_t codepoint) {
+  return codepoint >= kFirstCyrillic && codepoint <= kLastCyrillic;
+}
+
+// Check if codepoint is Greek
+inline bool isGreek(uint32_t codepoint) {
+  return codepoint >= kFirstGreek && codepoint <= kLastGreek;
+}
+
+// Convert codepoint to UTF-8 bytes
+// Returns number of bytes written (0 if invalid)
+inline size_t codepointToUtf8(uint32_t codepoint, uint8_t* out) {
+  if (codepoint < 0x80) {
+    out[0] = static_cast<uint8_t>(codepoint);
+    return 1;
+  }
+  if (codepoint < 0x800) {
+    out[0] = static_cast<uint8_t>(0xC0 | (codepoint >> 6));
+    out[1] = static_cast<uint8_t>(0x80 | (codepoint & 0x3F));
+    return 2;
+  }
+  if (codepoint < 0x10000) {
+    out[0] = static_cast<uint8_t>(0xE0 | (codepoint >> 12));
+    out[1] = static_cast<uint8_t>(0x80 | ((codepoint >> 6) & 0x3F));
+    out[2] = static_cast<uint8_t>(0x80 | (codepoint & 0x3F));
+    return 3;
+  }
+  if (codepoint < 0x110000) {
+    out[0] = static_cast<uint8_t>(0xF0 | (codepoint >> 18));
+    out[1] = static_cast<uint8_t>(0x80 | ((codepoint >> 12) & 0x3F));
+    out[2] = static_cast<uint8_t>(0x80 | ((codepoint >> 6) & 0x3F));
+    out[3] = static_cast<uint8_t>(0x80 | (codepoint & 0x3F));
+    return 4;
+  }
+  return 0;  // Invalid codepoint
+}
+
+// Count UTF-8 bytes needed for a codepoint (for storage size calculation)
+inline size_t utf8ByteCount(uint32_t codepoint) {
+  if (codepoint < 0x80) return 1;
+  if (codepoint < 0x800) return 2;
+  if (codepoint < 0x10000) return 3;
+  return 4;
+}
+
+// Parse codepoint from UTF-8 bytes (returns 0 on error)
+inline uint32_t utf8ToCodepoint(const uint8_t* bytes, size_t len, size_t& consumed) {
+  consumed = 1;
+  if (bytes[0] < 0x80) {
+    return bytes[0];
+  }
+  if ((bytes[0] & 0xE0) == 0xC0) {
+    if (len < 2) { consumed = 1; return 0; }
+    if ((bytes[1] & 0xC0) != 0x80) { consumed = 1; return 0; }
+    consumed = 2;
+    return ((bytes[0] & 0x1F) << 6) | (bytes[1] & 0x3F);
+  }
+  if ((bytes[0] & 0xF0) == 0xE0) {
+    if (len < 3) { consumed = 1; return 0; }
+    if ((bytes[1] & 0xC0) != 0x80) { consumed = 1; return 0; }
+    if ((bytes[2] & 0xC0) != 0x80) { consumed = 2; return 0; }
+    consumed = 3;
+    return ((bytes[0] & 0x0F) << 12) | ((bytes[1] & 0x3F) << 6) | (bytes[2] & 0x3F);
+  }
+  if ((bytes[0] & 0xF8) == 0xF0) {
+    if (len < 4) { consumed = 1; return 0; }
+    if ((bytes[1] & 0xC0) != 0x80) { consumed = 1; return 0; }
+    if ((bytes[2] & 0xC0) != 0x80) { consumed = 2; return 0; }
+    if ((bytes[3] & 0xC0) != 0x80) { consumed = 3; return 0; }
+    consumed = 4;
+    return ((bytes[0] & 0x07) << 18) | ((bytes[1] & 0x3F) << 12) | 
+           ((bytes[2] & 0x3F) << 6) | (bytes[3] & 0x3F);
+  }
+  return bytes[0];  // Invalid, return raw byte
+}
+
+// Convert UTF-8 string to storage bytes (with escape prefix for multi-byte)
+// Returns bytes written to 'out'
+inline size_t stringToStorage(const char* utf8, size_t len, uint8_t* out) {
+  size_t pos = 0;
+  size_t outPos = 0;
+  
+  while (pos < len) {
+    uint32_t codepoint = 0;
+    size_t consumed = 0;
+    
+    // Decode UTF-8
+    const uint8_t* bytes = reinterpret_cast<const uint8_t*>(utf8 + pos);
+    size_t remaining = len - pos;
+    
+    codepoint = utf8ToCodepoint(bytes, remaining, consumed);
+    
+    // Try legacy single-byte encoding first (ASCII, Latin-1, custom slots)
+    uint8_t legacy = 0;
+    if (LatinText::storageByteForCodepoint(codepoint, legacy)) {
+      out[outPos++] = legacy;
+    } else {
+      // Use UTF-8 for Cyrillic/Greek
+      uint8_t utf8Bytes[4];
+      size_t utf8Len = codepointToUtf8(codepoint, utf8Bytes);
+      for (size_t i = 0; i < utf8Len; i++) {
+        out[outPos++] = utf8Bytes[i];
+      }
+    }
+    
+    pos += consumed;
+  }
+  
+  return outPos;
+}
+
+// Get next codepoint from UTF-8 string
+inline uint32_t nextCodepoint(const char*& utf8, size_t& remaining) {
+  if (remaining == 0) return 0;
+  
+  const uint8_t* bytes = reinterpret_cast<const uint8_t*>(utf8);
+  size_t consumed = 0;
+  uint32_t cp = utf8ToCodepoint(bytes, remaining, consumed);
+  
+  utf8 += consumed;
+  remaining -= consumed;
+  
+  return cp;
+}
+
+// Count bytes to advance for next character in UTF-8 string
+// Returns 1 for ASCII, 2-4 for multi-byte sequences
+inline size_t utf8AdvanceBytes(const char* utf8, size_t remaining) {
+  if (remaining == 0) return 0;
+  const uint8_t b = static_cast<uint8_t>(utf8[0]);
+  if (b < 0x80) return 1;
+  if ((b & 0xE0) == 0xC0) return 2;
+  if ((b & 0xF0) == 0xE0) return std::min(remaining, size_t(3));
+  if ((b & 0xF8) == 0xF0) return std::min(remaining, size_t(4));
+  return 1;  // Invalid, treat as single byte
+}
+
+}  // namespace LatinTextUtf8
+
 }  // namespace LatinText
