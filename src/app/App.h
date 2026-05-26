@@ -286,6 +286,7 @@ class App {
   void selectSdCardRepairConfirmItem(uint32_t nowMs);
   void runSdCardRepair(uint32_t nowMs);
   void runSdCardCheck(uint32_t nowMs);
+  void runRebuildIndex(uint32_t nowMs);
   void openUpdateConfirm();
   void selectUpdateConfirmItem(uint32_t nowMs);
   void enterCompanionSync(uint32_t nowMs);

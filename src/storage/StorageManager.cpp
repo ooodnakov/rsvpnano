@@ -93,12 +93,17 @@ void trimAsciiWhitespace(String &text) {
 
 bool isWordBoundary(char c) {
   const uint8_t value = LatinText::byteValue(c);
+  // Space or control chars are word boundaries, but UTF-8 continuation bytes (0x80-0xBF)
+  // are part of multi-byte sequences and should NOT be boundaries
   return value <= ' ' && !LatinText::isWordCharacter(value) &&
-         !LatinText::isLowCustomSlotByte(value);
+         !LatinText::isLowCustomSlotByte(value) && value < 0x80;
 }
 
 bool isReadableTokenChar(char c) {
-  return LatinText::isWordCharacter(LatinText::byteValue(c));
+  const uint8_t value = LatinText::byteValue(c);
+  // Accept ASCII word chars (a-z, A-Z) and UTF-8 continuation bytes (0x80-0xBF)
+  // Continuation bytes are part of multi-byte sequences (Cyrillic, Greek, etc.)
+  return LatinText::isWordCharacter(value) || (value >= 0x80 && value <= 0xBF);
 }
 
 bool isInlineWordHyphen(const String &text, size_t index) {
@@ -1038,6 +1043,239 @@ void appendDisplayApproximation(String &target, uint32_t codepoint) {
     case 0xFB06:
       appendText(target, "st");
       return;
+    // Cyrillic approximations (U+0400-U+04FF)
+    case 0x0410:  // А
+    case 0x0430:  // а
+      target += 'A';
+      return;
+    case 0x0411:  // Б
+      target += 'B';
+      return;
+    case 0x0412:  // В
+    case 0x0432:  // в
+      target += 'B';
+      return;
+    case 0x0413:  // Г
+    case 0x0433:  // г
+      target += 'G';
+      return;
+    case 0x0414:  // Д
+    case 0x0434:  // д
+      target += 'D';
+      return;
+    case 0x0415:  // Е
+    case 0x0435:  // е
+      target += 'E';
+      return;
+    case 0x0401:  // Ё
+    case 0x0451:  // ё
+      appendText(target, "YO");
+      return;
+    case 0x0416:  // Ж
+    case 0x0436:  // ж
+      appendText(target, "ZH");
+      return;
+    case 0x0417:  // З
+    case 0x0437:  // з
+      target += 'Z';
+      return;
+    case 0x0418:  // И
+    case 0x0438:  // и
+      target += 'I';
+      return;
+    case 0x0419:  // Й
+    case 0x0439:  // й
+      appendText(target, "YI");
+      return;
+    case 0x041A:  // К
+    case 0x043A:  // к
+      target += 'K';
+      return;
+    case 0x041B:  // Л
+    case 0x043B:  // л
+      target += 'L';
+      return;
+    case 0x041C:  // М
+    case 0x043C:  // м
+      target += 'M';
+      return;
+    case 0x041D:  // Н
+    case 0x043D:  // н
+      target += 'N';
+      return;
+    case 0x041E:  // О
+    case 0x043E:  // о
+      target += 'O';
+      return;
+    case 0x041F:  // П
+    case 0x043F:  // п
+      target += 'P';
+      return;
+    case 0x0420:  // Р
+    case 0x0440:  // р
+      target += 'R';
+      return;
+    case 0x0421:  // С
+    case 0x0441:  // с
+      target += 'S';
+      return;
+    case 0x0422:  // Т
+    case 0x0442:  // т
+      target += 'T';
+      return;
+    case 0x0423:  // У
+    case 0x0443:  // у
+      target += 'U';
+      return;
+    case 0x0424:  // Ф
+    case 0x0444:  // ф
+      target += 'F';
+      return;
+    case 0x0425:  // Х
+    case 0x0445:  // х
+      target += 'H';
+      return;
+    case 0x0426:  // Ц
+    case 0x0446:  // ц
+      appendText(target, "TS");
+      return;
+    case 0x0427:  // Ч
+    case 0x0447:  // ч
+      appendText(target, "CH");
+      return;
+    case 0x0428:  // Ш
+    case 0x0448:  // ш
+      appendText(target, "SH");
+      return;
+    case 0x0429:  // Щ
+    case 0x0449:  // щ
+      appendText(target, "SHCH");
+      return;
+    case 0x042A:  // Ъ
+      appendText(target, "A");
+      return;
+    case 0x044A:  // ъ
+      appendText(target, "A");
+      return;
+    case 0x042B:  // Ы
+    case 0x044B:  // ы
+      target += 'Y';
+      return;
+    case 0x042C:  // Ь
+      target += '\'';
+      return;
+    case 0x044C:  // ь
+      target += '\'';
+      return;
+    case 0x042D:  // Э
+    case 0x044D:  // э
+      target += 'E';
+      return;
+    case 0x042E:  // Ю
+    case 0x044E:  // ю
+      appendText(target, "YU");
+      return;
+    case 0x042F:  // Я
+    case 0x044F:  // я
+      appendText(target, "YA");
+      return;
+    // Greek approximations (U+0370-U+03FF)
+    case 0x0391:  // Α
+    case 0x03B1:  // α
+      target += 'A';
+      return;
+    case 0x0392:  // Β
+    case 0x03B2:  // β
+      target += 'B';
+      return;
+    case 0x0393:  // Γ
+    case 0x03B3:  // γ
+      target += 'G';
+      return;
+    case 0x0394:  // Δ
+    case 0x03B4:  // δ
+      target += 'D';
+      return;
+    case 0x0395:  // Ε
+    case 0x03B5:  // ε
+      target += 'E';
+      return;
+    case 0x0396:  // Ζ
+    case 0x03B6:  // ζ
+      target += 'Z';
+      return;
+    case 0x0397:  // Η
+    case 0x03B7:  // η
+      target += 'I';
+      return;
+    case 0x0398:  // Θ
+    case 0x03B8:  // θ
+      appendText(target, "TH");
+      return;
+    case 0x0399:  // Ι
+    case 0x03B9:  // ι
+      target += 'I';
+      return;
+    case 0x039A:  // Κ
+    case 0x03BA:  // κ
+      target += 'K';
+      return;
+    case 0x039B:  // Λ
+    case 0x03BB:  // λ
+      target += 'L';
+      return;
+    case 0x039C:  // Μ
+    case 0x03BC:  // μ
+      target += 'M';
+      return;
+    case 0x039D:  // Ν
+    case 0x03BD:  // ν
+      target += 'N';
+      return;
+    case 0x039E:  // Ξ
+    case 0x03BE:  // ξ
+      appendText(target, "KS");
+      return;
+    case 0x039F:  // Ο
+    case 0x03BF:  // ο
+      target += 'O';
+      return;
+    case 0x03A0:  // Π
+    case 0x03C0:  // π
+      target += 'P';
+      return;
+    case 0x03A1:  // Ρ
+    case 0x03C1:  // ρ
+      target += 'R';
+      return;
+    case 0x03A3:  // Σ
+    case 0x03C3:  // σ
+      target += 'S';
+      return;
+    case 0x03A4:  // Τ
+    case 0x03C4:  // τ
+      target += 'T';
+      return;
+    case 0x03A5:  // Υ
+    case 0x03C5:  // υ
+      target += 'U';
+      return;
+    case 0x03A6:  // Φ
+    case 0x03C6:  // φ
+      appendText(target, "PH");
+      return;
+    case 0x03A7:  // Χ
+    case 0x03C7:  // χ
+      appendText(target, "CH");
+      return;
+    case 0x03A8:  // Ψ
+    case 0x03C8:  // ψ
+      appendText(target, "PS");
+      return;
+    case 0x03A9:  // Ω
+    case 0x03C9:  // ω
+      target += 'O';
+      return;
     default:
       return;
   }
@@ -1228,10 +1466,15 @@ String normalizeDisplayText(const String &text, ParseStats *stats = nullptr) {
     const size_t before = index;
     uint32_t codepoint = 0;
     if (decodeUtf8Codepoint(text, index, codepoint)) {
-      if (stats != nullptr && codepoint > 0x7F) {
-        ++stats->nonAsciiCodepoints;
+      // Preserve multi-byte UTF-8 (Cyrillic, Greek, etc.) as-is for proper display
+      if (codepoint > 0x7F) {
+        // Append the original UTF-8 bytes directly
+        for (size_t j = before; j < index; ++j) {
+          normalized += text[j];
+        }
+      } else {
+        appendDisplayApproximation(normalized, codepoint);
       }
-      appendDisplayApproximation(normalized, codepoint);
       continue;
     }
 
@@ -2865,6 +3108,58 @@ bool StorageManager::repairSdCardFolders() {
                   articleFilesOk ? 1 : 0, configOk ? 1 : 0);
   }
   return ok;
+}
+
+int StorageManager::rebuildAllIndexes() {
+  if (!mounted_) {
+    Serial.println("[storage] rebuild indexes skipped: card not mounted");
+    return -1;
+  }
+
+  // Get fresh book paths
+  refreshBookPaths(false);
+  const size_t count = bookPaths_.size();
+  if (count == 0) {
+    Serial.println("[storage] no books found");
+    return 0;
+  }
+
+  Serial.printf("[storage] rebuilding indexes for %u books\n", (unsigned)count);
+  int rebuilt = 0;
+
+  for (size_t i = 0; i < count; ++i) {
+    const String &path = bookPaths_[i];
+    const String name = displayNameForPath(path);
+
+    // Show progress
+    const int progress = static_cast<int>((i * 100) / count);
+    const String progressLabel = String(i + 1) + "/" + String(count);
+    notifyStatus("Rebuilding index", name.c_str(), progressLabel.c_str(), progress);
+
+    // Delete existing index files
+    const String rdatPath = indexedDataPathFor(path);
+    const String ridxPath = indexedIndexPathFor(path);
+    SD_MMC.remove(rdatPath);
+    SD_MMC.remove(ridxPath);
+
+    // Rebuild index
+    BookMetadata metadata;
+    const bool rsvpFormat = path.endsWith(".rsvp");
+    if (buildIndexedBook(path, metadata, rsvpFormat)) {
+      Serial.printf("[storage] rebuilt: %s (%u words)\n", name.c_str(),
+                   (unsigned)metadata.wordCount);
+      ++rebuilt;
+    } else {
+      Serial.printf("[storage] failed: %s\n", name.c_str());
+    }
+
+    yield();
+  }
+
+  // Refresh paths to include rebuilt metadata
+  refreshBookPaths(true);
+
+  return rebuilt;
 }
 
 void StorageManager::refreshBookPaths(bool includeMetadata) {

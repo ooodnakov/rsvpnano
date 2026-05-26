@@ -446,19 +446,23 @@ ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface
   // Cyrillic: U+0400–U+04FF
   if (codepoint >= 0x0400 && codepoint <= 0x04FF) {
     size_t cyrillicIndex = codepoint - 0x0400;  // 0-255
-    // Latin slots 1-255 map to indices 0-254 in glyph array
-    size_t glyphIndex = 254 + cyrillicIndex;    // offset by Latin slots
+    // Latin section has 255 glyphs (custom slots + ASCII)
+    // First Cyrillic glyph is at index 255
+    constexpr size_t latinGlyphCount = 255;
+    size_t glyphIndex = latinGlyphCount + cyrillicIndex;  // 255 + 0 = first Cyrillic glyph
     
     switch (typeface) {
       case DisplayManager::ReaderTypeface::OpenDyslexic: {
-        if (glyphIndex < (kEmbeddedOpenDyslexicLastCyrillic - kEmbeddedOpenDyslexicFirstCyrillic + 1) + 254) {
+        constexpr size_t openDyslexicLatin = 255;
+        if (glyphIndex < (kEmbeddedOpenDyslexicLastCyrillic - kEmbeddedOpenDyslexicFirstCyrillic + 1) + openDyslexicLatin) {
           const auto& g = kEmbeddedOpenDyslexicGlyphs[glyphIndex];
           return {kEmbeddedOpenDyslexicBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedOpenDyslexicHeight};
         }
         return serifGlyphForByte('?');
       }
       case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
-        if (glyphIndex < (kEmbeddedAtkinsonLastCyrillic - kEmbeddedAtkinsonFirstCyrillic + 1) + 254) {
+        constexpr size_t atkinsonLatin = 255;
+        if (glyphIndex < (kEmbeddedAtkinsonLastCyrillic - kEmbeddedAtkinsonFirstCyrillic + 1) + atkinsonLatin) {
           const auto& g = kEmbeddedAtkinsonGlyphs[glyphIndex];
           return {kEmbeddedAtkinsonBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedAtkinsonHeight};
         }
@@ -466,7 +470,7 @@ ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface
       }
       case DisplayManager::ReaderTypeface::Standard:
       default: {
-        if (glyphIndex < (kEmbeddedSerifLastCyrillic - kEmbeddedSerifFirstCyrillic + 1) + 254) {
+        if (glyphIndex < (kEmbeddedSerifLastCyrillic - kEmbeddedSerifFirstCyrillic + 1) + latinGlyphCount) {
           const auto& g = kEmbeddedSerifGlyphs[glyphIndex];
           return {kEmbeddedSerifBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedSerifHeight};
         }
@@ -477,20 +481,24 @@ ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface
   
   // Greek: U+0370–U+03FF
   if (codepoint >= 0x0370 && codepoint <= 0x03FF) {
-    // Cyrillic block (256 chars) comes after Latin slots (254 glyphs)
+    // Latin (80 glyphs) + Cyrillic (256 glyphs) come before Greek
+    constexpr size_t latinGlyphCount = 255;
+    constexpr size_t cyrillicGlyphCount = 256;
     size_t greekIndex = codepoint - 0x0370;  // 0-95
-    size_t glyphIndex = 254 + 256 + greekIndex;  // after Latin + Cyrillic
+    size_t glyphIndex = latinGlyphCount + cyrillicGlyphCount + greekIndex;  // 255 + 256 + 0 = first Greek glyph
     
     switch (typeface) {
       case DisplayManager::ReaderTypeface::OpenDyslexic: {
-        if (glyphIndex < (kEmbeddedOpenDyslexicLastGreek - kEmbeddedOpenDyslexicFirstGreek + 1) + 254 + 256) {
+        constexpr size_t openDyslexicLatin = 255;
+        if (glyphIndex < (kEmbeddedOpenDyslexicLastGreek - kEmbeddedOpenDyslexicFirstGreek + 1) + openDyslexicLatin + cyrillicGlyphCount) {
           const auto& g = kEmbeddedOpenDyslexicGlyphs[glyphIndex];
           return {kEmbeddedOpenDyslexicBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedOpenDyslexicHeight};
         }
         return serifGlyphForByte('?');
       }
       case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
-        if (glyphIndex < (kEmbeddedAtkinsonLastGreek - kEmbeddedAtkinsonFirstGreek + 1) + 254 + 256) {
+        constexpr size_t atkinsonLatin = 255;
+        if (glyphIndex < (kEmbeddedAtkinsonLastGreek - kEmbeddedAtkinsonFirstGreek + 1) + atkinsonLatin + cyrillicGlyphCount) {
           const auto& g = kEmbeddedAtkinsonGlyphs[glyphIndex];
           return {kEmbeddedAtkinsonBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedAtkinsonHeight};
         }
@@ -498,7 +506,7 @@ ReaderGlyph glyphForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface
       }
       case DisplayManager::ReaderTypeface::Standard:
       default: {
-        if (glyphIndex < (kEmbeddedSerifLastGreek - kEmbeddedSerifFirstGreek + 1) + 254 + 256) {
+        if (glyphIndex < (kEmbeddedSerifLastGreek - kEmbeddedSerifFirstGreek + 1) + latinGlyphCount + cyrillicGlyphCount) {
           const auto& g = kEmbeddedSerifGlyphs[glyphIndex];
           return {kEmbeddedSerifBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance, kEmbeddedSerifHeight};
         }
@@ -546,6 +554,97 @@ ReaderGlyph glyph70For(char c, DisplayManager::ReaderTypeface typeface) {
 }
 
 ReaderGlyph glyph70For(char c) { return glyph70For(c, currentReaderTypeface()); }
+
+ReaderGlyph glyph70ForCodepoint(uint32_t codepoint, DisplayManager::ReaderTypeface typeface) {
+  if (codepoint <= 0xFF) {
+    return glyph70For(static_cast<char>(codepoint), typeface);
+  }
+
+  if (codepoint >= 0x0400 && codepoint <= 0x04FF) {
+    const size_t cyrillicIndex = codepoint - 0x0400;
+    constexpr size_t cyrillicGlyphCount = 256;
+
+    switch (typeface) {
+      case DisplayManager::ReaderTypeface::OpenDyslexic: {
+        constexpr size_t latinGlyphCount =
+            kEmbeddedOpenDyslexic70LastChar - kEmbeddedOpenDyslexic70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount) {
+          const auto &g = kEmbeddedOpenDyslexic70Glyphs[glyphIndex];
+          return {kEmbeddedOpenDyslexic70Bitmaps + g.bitmapOffset, g.xOffset, g.width,
+                  g.xAdvance, kEmbeddedOpenDyslexic70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
+        constexpr size_t latinGlyphCount =
+            kEmbeddedAtkinson70LastChar - kEmbeddedAtkinson70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount) {
+          const auto &g = kEmbeddedAtkinson70Glyphs[glyphIndex];
+          return {kEmbeddedAtkinson70Bitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+                  kEmbeddedAtkinson70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::Standard:
+      default: {
+        constexpr size_t latinGlyphCount = kEmbeddedSerif70LastChar - kEmbeddedSerif70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount) {
+          const auto &g = kEmbeddedSerif70Glyphs[glyphIndex];
+          return {kEmbeddedSerif70Bitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+                  kEmbeddedSerif70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+    }
+  }
+
+  if (codepoint >= 0x0370 && codepoint <= 0x03FF) {
+    const size_t greekIndex = codepoint - 0x0370;
+    constexpr size_t cyrillicGlyphCount = 256;
+    constexpr size_t greekGlyphCount = 0x03FF - 0x0370 + 1;
+
+    switch (typeface) {
+      case DisplayManager::ReaderTypeface::OpenDyslexic: {
+        constexpr size_t latinGlyphCount =
+            kEmbeddedOpenDyslexic70LastChar - kEmbeddedOpenDyslexic70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicGlyphCount + greekIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount + greekGlyphCount) {
+          const auto &g = kEmbeddedOpenDyslexic70Glyphs[glyphIndex];
+          return {kEmbeddedOpenDyslexic70Bitmaps + g.bitmapOffset, g.xOffset, g.width,
+                  g.xAdvance, kEmbeddedOpenDyslexic70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::AtkinsonHyperlegible: {
+        constexpr size_t latinGlyphCount =
+            kEmbeddedAtkinson70LastChar - kEmbeddedAtkinson70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicGlyphCount + greekIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount + greekGlyphCount) {
+          const auto &g = kEmbeddedAtkinson70Glyphs[glyphIndex];
+          return {kEmbeddedAtkinson70Bitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+                  kEmbeddedAtkinson70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+      case DisplayManager::ReaderTypeface::Standard:
+      default: {
+        constexpr size_t latinGlyphCount = kEmbeddedSerif70LastChar - kEmbeddedSerif70FirstChar + 1;
+        const size_t glyphIndex = latinGlyphCount + cyrillicGlyphCount + greekIndex;
+        if (glyphIndex < latinGlyphCount + cyrillicGlyphCount + greekGlyphCount) {
+          const auto &g = kEmbeddedSerif70Glyphs[glyphIndex];
+          return {kEmbeddedSerif70Bitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+                  kEmbeddedSerif70Height};
+        }
+        return serif70GlyphForByte('?');
+      }
+    }
+  }
+
+  return serif70GlyphForByte('?');
+}
 
 const uint8_t *tinyRowsFor(char c) {
   uint8_t value = LatinText::byteValue(c);
@@ -628,6 +727,13 @@ int trackedAdvance(int advance, size_t index, size_t length) {
   return std::max(1, advance + currentTypographyTrackingPx());
 }
 
+int trackedAdvanceForNext(int advance, bool hasNextCharacter) {
+  if (!hasNextCharacter) {
+    return advance;
+  }
+  return std::max(1, advance + currentTypographyTrackingPx());
+}
+
 int trackedAdvanceScaled(int advance, int divisor, size_t index, size_t length) {
   const int scaled = scaledAdvance(advance, divisor);
   if (index + 1 >= length) {
@@ -636,9 +742,25 @@ int trackedAdvanceScaled(int advance, int divisor, size_t index, size_t length) 
   return std::max(1, scaled + scaledSignedAdvance(currentTypographyTrackingPx(), divisor));
 }
 
+int trackedAdvanceScaledForNext(int advance, int divisor, bool hasNextCharacter) {
+  const int scaled = scaledAdvance(advance, divisor);
+  if (!hasNextCharacter) {
+    return scaled;
+  }
+  return std::max(1, scaled + scaledSignedAdvance(currentTypographyTrackingPx(), divisor));
+}
+
 int trackedAdvanceScaledPercent(int advance, uint8_t scalePercent, size_t index, size_t length) {
   const int scaled = scaledPercentDimension(advance, scalePercent);
   if (index + 1 >= length) {
+    return scaled;
+  }
+  return std::max(1, scaled + scaledSignedPercent(currentTypographyTrackingPx(), scalePercent));
+}
+
+int trackedAdvanceScaledPercentForNext(int advance, uint8_t scalePercent, bool hasNextCharacter) {
+  const int scaled = scaledPercentDimension(advance, scalePercent);
+  if (!hasNextCharacter) {
     return scaled;
   }
   return std::max(1, scaled + scaledSignedPercent(currentTypographyTrackingPx(), scalePercent));
@@ -658,6 +780,14 @@ int opticalKerningAdjustment(char currentChar, char nextChar, int currentXOffset
   }
 
   return std::min(visibleGap - desiredGap, std::max(0, trackedAdvanceValue - 1));
+}
+
+bool isWordCodepoint(uint32_t codepoint) {
+  if (codepoint <= 0xFF) {
+    return isWordCharacter(static_cast<char>(codepoint));
+  }
+  return (codepoint >= 0x0400 && codepoint <= 0x04FF) ||
+         (codepoint >= 0x0370 && codepoint <= 0x03FF);
 }
 
 int regularDesiredGap() { return std::max(1, kOpticalLetterGapPx + currentTypographyTrackingPx()); }
@@ -728,8 +858,9 @@ TextLayoutMetrics serifWordLayout(const String &word, int focusIndex, int diviso
     }
 
 
-    int tracked = trackedAdvanceScaled(glyph.xAdvance, divisor, charIndex, wordLen);
-    if (pos + consumed < wordLen) {
+    const bool hasNext = pos + consumed < wordLen;
+    int tracked = trackedAdvanceScaledForNext(glyph.xAdvance, divisor, hasNext);
+    if (hasNext) {
       auto nextResult = utf8NextCodepoint(word.c_str(), wordLen, pos + consumed);
       uint32_t nextCp = nextResult.first;
       const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
@@ -776,8 +907,9 @@ TextLayoutMetrics serifWordLayoutScaledPercent(const String &word, int focusInde
       layout.focusCenterX = width > 0 ? left + (width / 2) : cursorX + (advance / 2);
     }
 
-    int tracked = trackedAdvanceScaledPercent(glyph.xAdvance, scalePercent, charIndex, wordLen);
-    if (pos + consumed < wordLen) {
+    const bool hasNext = pos + consumed < wordLen;
+    int tracked = trackedAdvanceScaledPercentForNext(glyph.xAdvance, scalePercent, hasNext);
+    if (hasNext) {
       auto nextResult = utf8NextCodepoint(word.c_str(), wordLen, pos + consumed);
       uint32_t nextCp = nextResult.first;
       const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
@@ -806,25 +938,39 @@ TextLayoutMetrics serif70WordLayout(const String &word, int focusIndex) {
   const bool trackFocus = focusIndex >= 0;
   const DisplayManager::ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
 
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyph70For(word[i], typeface);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  const size_t wordLen = word.length();
+
+  while (pos < wordLen) {
+    auto result = utf8NextCodepoint(word.c_str(), wordLen, pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyph70ForCodepoint(codepoint, typeface);
     const int left = cursorX + glyph.xOffset;
     const int width = glyph.width;
     const int advance = glyph.xAdvance;
     updateTextLayoutBounds(layout, left, width);
 
-    if (trackFocus && static_cast<int>(i) == focusIndex) {
+    if (trackFocus && static_cast<int>(charIndex) == focusIndex) {
       layout.focusCenterX = width > 0 ? left + (width / 2) : cursorX + (advance / 2);
     }
 
-    int tracked = trackedAdvance(advance, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyph70For(word[i + 1], typeface);
-      tracked -= opticalKerningAdjustment(word[i], word[i + 1], glyph.xOffset, width, tracked,
+    const bool hasNext = pos + consumed < wordLen;
+    int tracked = trackedAdvanceForNext(advance, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), wordLen, pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyph70ForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
+      tracked -= opticalKerningAdjustment(currentChar, nextChar, glyph.xOffset, width, tracked,
                                           nextGlyph.xOffset,
                                           regularDesiredGap());
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    charIndex++;
   }
 
   if (!trackFocus && layout.hasPixels) {
@@ -876,10 +1022,17 @@ int orpOrdinalForLength(int length) {
 
 int findFocusLetterIndex(const String &word) {
   int wordCharacterCount = 0;
-  for (size_t i = 0; i < word.length(); ++i) {
-    if (isWordCharacter(word[i])) {
+  size_t pos = 0;
+  const size_t wordLen = word.length();
+
+  while (pos < wordLen) {
+    auto result = utf8NextCodepoint(word.c_str(), wordLen, pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    if (isWordCodepoint(codepoint)) {
       ++wordCharacterCount;
     }
+    pos += consumed;
   }
 
   if (wordCharacterCount == 0) {
@@ -888,14 +1041,23 @@ int findFocusLetterIndex(const String &word) {
 
   const int targetOrdinal = std::min(orpOrdinalForLength(wordCharacterCount), wordCharacterCount - 1);
   int currentOrdinal = 0;
-  for (size_t i = 0; i < word.length(); ++i) {
-    if (!isWordCharacter(word[i])) {
+  pos = 0;
+  size_t charIndex = 0;
+  while (pos < wordLen) {
+    auto result = utf8NextCodepoint(word.c_str(), wordLen, pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    if (!isWordCodepoint(codepoint)) {
+      pos += consumed;
+      ++charIndex;
       continue;
     }
     if (currentOrdinal == targetOrdinal) {
-      return static_cast<int>(i);
+      return static_cast<int>(charIndex);
     }
     ++currentOrdinal;
+    pos += consumed;
+    ++charIndex;
   }
 
   return 0;
@@ -1403,6 +1565,38 @@ void DisplayManager::drawGlyph(int x, int y, char c, uint16_t color, ReaderTypef
   }
 }
 
+void DisplayManager::drawCodepointGlyph(int x, int y, uint32_t codepoint, uint16_t color, ReaderTypeface typeface) {
+  const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
+  if (glyph.width == 0) {
+    return;
+  }
+  const bool invert = shouldDrawInvertedGlyph(static_cast<char>(codepoint < 256 ? codepoint : '?'));
+
+  for (int row = 0; row < glyph.height; ++row) {
+    const int dstY = y + row;
+    if (dstY < 0 || dstY >= kVirtualBufferHeight) {
+      continue;
+    }
+
+    for (int col = 0; col < glyph.width; ++col) {
+      const int dstX = x + col;
+      if (dstX < 0 || dstX >= kVirtualBufferWidth) {
+        continue;
+      }
+
+      const int sourceRow = invert ? glyph.height - 1 - row : row;
+      const int sourceCol = invert ? glyph.width - 1 - col : col;
+      const uint8_t alpha = glyph.bitmap[sourceRow * glyph.width + sourceCol];
+      if (alpha < kGlyphAlphaThreshold) {
+        continue;
+      }
+
+      virtualFrame_[dstY * kVirtualBufferWidth + dstX] =
+          panelColor(blendOverBackground(color, alpha));
+    }
+  }
+}
+
 void DisplayManager::drawSerifGlyphScaled(int x, int y, char c, uint16_t color, int divisor) {
   drawSerifGlyphScaled(x, y, c, color, divisor, currentReaderTypeface());
 }
@@ -1459,6 +1653,58 @@ void DisplayManager::drawSerifGlyphScaled(int x, int y, char c, uint16_t color, 
   }
 }
 
+void DisplayManager::drawSerifGlyphScaledCodepoint(int x, int y, uint32_t codepoint, uint16_t color,
+                                                    int divisor, ReaderTypeface typeface) {
+  divisor = std::max(1, divisor);
+  const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
+  if (glyph.width == 0) {
+    return;
+  }
+  const bool invert = shouldDrawInvertedGlyph(static_cast<char>(codepoint < 256 ? codepoint : '?'));
+
+  const int glyphHeight = glyph.height;
+  const int scaledWidth = std::max(1, (glyph.width + divisor - 1) / divisor);
+  const int scaledHeight = std::max(1, (glyphHeight + divisor - 1) / divisor);
+
+  for (int dstRow = 0; dstRow < scaledHeight; ++dstRow) {
+    const int dstY = y + dstRow;
+    if (dstY < 0 || dstY >= kVirtualBufferHeight) {
+      continue;
+    }
+
+    const int sourceYStart = dstRow * divisor;
+    const int sourceYEnd = std::min(glyphHeight, sourceYStart + divisor);
+    for (int dstCol = 0; dstCol < scaledWidth; ++dstCol) {
+      const int dstX = x + dstCol;
+      if (dstX < 0 || dstX >= kVirtualBufferWidth) {
+        continue;
+      }
+
+      const int sourceXStart = dstCol * divisor;
+      const int sourceXEnd = std::min(static_cast<int>(glyph.width), sourceXStart + divisor);
+      uint32_t alphaSum = 0;
+      uint32_t sampleCount = 0;
+      for (int sourceY = sourceYStart; sourceY < sourceYEnd; ++sourceY) {
+        for (int sourceX = sourceXStart; sourceX < sourceXEnd; ++sourceX) {
+          const int lookupY = invert ? glyphHeight - 1 - sourceY : sourceY;
+          const int lookupX = invert ? glyph.width - 1 - sourceX : sourceX;
+          alphaSum += glyph.bitmap[lookupY * glyph.width + lookupX];
+          ++sampleCount;
+        }
+      }
+
+      const uint8_t alpha =
+          sampleCount == 0 ? 0 : static_cast<uint8_t>(alphaSum / sampleCount);
+      if (alpha < kGlyphAlphaThreshold) {
+        continue;
+      }
+
+      virtualFrame_[dstY * kVirtualBufferWidth + dstX] =
+          panelColor(blendOverBackground(color, alpha));
+    }
+  }
+}
+
 void DisplayManager::drawSerif70Glyph(int x, int y, char c, uint16_t color) {
   drawSerif70Glyph(x, y, c, color, currentReaderTypeface());
 }
@@ -1469,6 +1715,39 @@ void DisplayManager::drawSerif70Glyph(int x, int y, char c, uint16_t color, Read
     return;
   }
   const bool invert = shouldDrawInvertedGlyph(c);
+
+  for (int row = 0; row < glyph.height; ++row) {
+    const int dstY = y + row;
+    if (dstY < 0 || dstY >= kVirtualBufferHeight) {
+      continue;
+    }
+
+    for (int col = 0; col < glyph.width; ++col) {
+      const int dstX = x + col;
+      if (dstX < 0 || dstX >= kVirtualBufferWidth) {
+        continue;
+      }
+
+      const int sourceRow = invert ? glyph.height - 1 - row : row;
+      const int sourceCol = invert ? glyph.width - 1 - col : col;
+      const uint8_t alpha = glyph.bitmap[sourceRow * glyph.width + sourceCol];
+      if (alpha < kGlyphAlphaThreshold) {
+        continue;
+      }
+
+      virtualFrame_[dstY * kVirtualBufferWidth + dstX] =
+          panelColor(blendOverBackground(color, alpha));
+    }
+  }
+}
+
+void DisplayManager::drawSerif70GlyphCodepoint(int x, int y, uint32_t codepoint, uint16_t color,
+                                               ReaderTypeface typeface) {
+  const ReaderGlyph glyph = glyph70ForCodepoint(codepoint, typeface);
+  if (glyph.width == 0) {
+    return;
+  }
+  const bool invert = shouldDrawInvertedGlyph(static_cast<char>(codepoint < 256 ? codepoint : '?'));
 
   for (int row = 0; row < glyph.height; ++row) {
     const int dstY = y + row;
@@ -1560,6 +1839,66 @@ void DisplayManager::drawSerifGlyphScaledPercent(int x, int y, char c, uint16_t 
   }
 }
 
+void DisplayManager::drawSerifGlyphScaledPercentCodepoint(int x, int y, uint32_t codepoint,
+                                                           uint16_t color, uint8_t scalePercent,
+                                                           ReaderTypeface typeface) {
+  if (scalePercent >= 100) {
+    drawCodepointGlyph(x, y, codepoint, color, typeface);
+    return;
+  }
+
+  const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
+  if (glyph.width == 0) {
+    return;
+  }
+  const bool invert = shouldDrawInvertedGlyph(static_cast<char>(codepoint < 256 ? codepoint : '?'));
+
+  const int glyphHeight = glyph.height;
+  const int scaledWidth = scaledPercentDimension(glyph.width, scalePercent);
+  const int scaledHeight = scaledPercentDimension(glyphHeight, scalePercent);
+
+  for (int dstRow = 0; dstRow < scaledHeight; ++dstRow) {
+    const int dstY = y + dstRow;
+    if (dstY < 0 || dstY >= kVirtualBufferHeight) {
+      continue;
+    }
+
+    const int sourceYStart = (dstRow * glyphHeight) / scaledHeight;
+    const int sourceYEnd =
+        std::min(glyphHeight, ((dstRow + 1) * glyphHeight + scaledHeight - 1) / scaledHeight);
+    for (int dstCol = 0; dstCol < scaledWidth; ++dstCol) {
+      const int dstX = x + dstCol;
+      if (dstX < 0 || dstX >= kVirtualBufferWidth) {
+        continue;
+      }
+
+      const int sourceXStart = (dstCol * glyph.width) / scaledWidth;
+      const int sourceXEnd =
+          std::min(static_cast<int>(glyph.width),
+                   ((dstCol + 1) * glyph.width + scaledWidth - 1) / scaledWidth);
+      uint32_t alphaSum = 0;
+      uint32_t sampleCount = 0;
+      for (int sourceY = sourceYStart; sourceY < sourceYEnd; ++sourceY) {
+        for (int sourceX = sourceXStart; sourceX < sourceXEnd; ++sourceX) {
+          const int lookupY = invert ? glyphHeight - 1 - sourceY : sourceY;
+          const int lookupX = invert ? glyph.width - 1 - sourceX : sourceX;
+          alphaSum += glyph.bitmap[lookupY * glyph.width + lookupX];
+          ++sampleCount;
+        }
+      }
+
+      const uint8_t alpha =
+          sampleCount == 0 ? 0 : static_cast<uint8_t>(alphaSum / sampleCount);
+      if (alpha < kGlyphAlphaThreshold) {
+        continue;
+      }
+
+      virtualFrame_[dstY * kVirtualBufferWidth + dstX] =
+          panelColor(blendOverBackground(color, alpha));
+    }
+  }
+}
+
 void DisplayManager::fillVirtualRect(int x, int y, int width, int height, uint16_t color) {
   const uint16_t panel = panelColor(color);
   const int xEnd = std::min(kVirtualBufferWidth, x + width);
@@ -1579,35 +1918,55 @@ void DisplayManager::drawSerifTextAt(const String &text, int x, int y, uint16_t 
   divisor = std::max(1, divisor);
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(text);
-  for (size_t i = 0; i < text.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(text[i], typeface);
+  size_t pos = 0;
+  while (pos < text.length()) {
+    auto result = utf8NextCodepoint(text.c_str(), text.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const int xOffset = scaledSignedAdvance(glyph.xOffset, divisor);
     const int width = glyph.width == 0 ? 0 : scaledAdvance(glyph.width, divisor);
-    drawSerifGlyphScaled(cursorX + xOffset, y, text[i], color, divisor, typeface);
-    int tracked = trackedAdvanceScaled(glyph.xAdvance, divisor, i, text.length());
-    if (i + 1 < text.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(text[i + 1], typeface);
+    drawSerifGlyphScaledCodepoint(cursorX + xOffset, y, codepoint, color, divisor, typeface);
+    const bool hasNext = pos + consumed < text.length();
+    int tracked = trackedAdvanceScaledForNext(glyph.xAdvance, divisor, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(text.c_str(), text.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          text[i], text[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedAdvance(nextGlyph.xOffset, divisor), scaledDesiredGap(divisor));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
   }
 }
 
 void DisplayManager::drawSerif70TextAt(const String &text, int x, int y, uint16_t color) {
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(text);
-  for (size_t i = 0; i < text.length(); ++i) {
-    const ReaderGlyph glyph = glyph70For(text[i], typeface);
-    drawSerif70Glyph(cursorX + glyph.xOffset, y, text[i], color, typeface);
-    int tracked = trackedAdvance(glyph.xAdvance, i, text.length());
-    if (i + 1 < text.length()) {
-      const ReaderGlyph nextGlyph = glyph70For(text[i + 1], typeface);
-      tracked -= opticalKerningAdjustment(text[i], text[i + 1], glyph.xOffset, glyph.width, tracked,
-                                          nextGlyph.xOffset, regularDesiredGap());
+  size_t pos = 0;
+  while (pos < text.length()) {
+    auto result = utf8NextCodepoint(text.c_str(), text.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyph70ForCodepoint(codepoint, typeface);
+    drawSerif70GlyphCodepoint(cursorX + glyph.xOffset, y, codepoint, color, typeface);
+    const bool hasNext = pos + consumed < text.length();
+    int tracked = trackedAdvanceForNext(glyph.xAdvance, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(text.c_str(), text.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyph70ForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
+      tracked -= opticalKerningAdjustment(currentChar, nextChar, glyph.xOffset, glyph.width,
+                                          tracked, nextGlyph.xOffset, regularDesiredGap());
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
   }
 }
 
@@ -1615,21 +1974,31 @@ void DisplayManager::drawSerifTextScaledAt(const String &text, int x, int y, uin
                                            uint8_t scalePercent) {
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(text);
-  for (size_t i = 0; i < text.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(text[i], typeface);
+  size_t pos = 0;
+  while (pos < text.length()) {
+    auto result = utf8NextCodepoint(text.c_str(), text.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const int xOffset = scaledSignedPercent(glyph.xOffset, scalePercent);
     const int width =
         glyph.width == 0 ? 0 : scaledPercentDimension(glyph.width, scalePercent);
-    drawSerifGlyphScaledPercent(cursorX + xOffset, y, text[i], color, scalePercent, typeface);
-    int tracked = trackedAdvanceScaledPercent(glyph.xAdvance, scalePercent, i, text.length());
-    if (i + 1 < text.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(text[i + 1], typeface);
+    drawSerifGlyphScaledPercentCodepoint(cursorX + xOffset, y, codepoint, color, scalePercent, typeface);
+    const bool hasNext = pos + consumed < text.length();
+    int tracked = trackedAdvanceScaledPercentForNext(glyph.xAdvance, scalePercent, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(text.c_str(), text.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          text[i], text[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedPercent(nextGlyph.xOffset, scalePercent),
           scaledPercentDesiredGap(scalePercent));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
   }
 }
 
@@ -1760,16 +2129,26 @@ void DisplayManager::drawRsvpAnchorGuide(int anchorX, int textY, int textHeight)
 void DisplayManager::drawWordAt(const String &word, int x, int y, uint16_t color) {
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(word[i], typeface);
-    drawGlyph(cursorX + glyph.xOffset, y, word[i], color, typeface);
-    int tracked = trackedAdvance(glyph.xAdvance, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(word[i + 1], typeface);
-      tracked -= opticalKerningAdjustment(word[i], word[i + 1], glyph.xOffset, glyph.width, tracked,
+  size_t pos = 0;
+  while (pos < word.length()) {
+    auto result = utf8NextCodepoint(word.c_str(), word.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
+    drawCodepointGlyph(cursorX + glyph.xOffset, y, codepoint, color, typeface);
+    const bool hasNext = pos + consumed < word.length();
+    int tracked = trackedAdvanceForNext(glyph.xAdvance, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), word.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
+      tracked -= opticalKerningAdjustment(currentChar, nextChar, glyph.xOffset, glyph.width, tracked,
                                           nextGlyph.xOffset, regularDesiredGap());
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
   }
 }
 
@@ -1779,21 +2158,33 @@ void DisplayManager::drawRsvpWordScaledAt(const String &word, int x, int y, int 
   const bool highlightFocus = currentFocusHighlightEnabled();
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(word[i], typeface);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  while (pos < word.length()) {
+    auto result = utf8NextCodepoint(word.c_str(), word.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const uint16_t color =
-        (highlightFocus && static_cast<int>(i) == focusIndex) ? focusColor() : wordColor();
+        (highlightFocus && static_cast<int>(charIndex) == focusIndex) ? focusColor() : wordColor();
     const int xOffset = scaledSignedAdvance(glyph.xOffset, divisor);
     const int width = glyph.width == 0 ? 0 : scaledAdvance(glyph.width, divisor);
-    drawSerifGlyphScaled(cursorX + xOffset, y, word[i], color, divisor, typeface);
-    int tracked = trackedAdvanceScaled(glyph.xAdvance, divisor, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(word[i + 1], typeface);
+    drawSerifGlyphScaledCodepoint(cursorX + xOffset, y, codepoint, color, divisor, typeface);
+    const bool hasNext = pos + consumed < word.length();
+    int tracked = trackedAdvanceScaledForNext(glyph.xAdvance, divisor, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), word.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          word[i], word[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedAdvance(nextGlyph.xOffset, divisor), scaledDesiredGap(divisor));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    charIndex++;
   }
 }
 
@@ -1801,18 +2192,30 @@ void DisplayManager::drawRsvp70WordAt(const String &word, int x, int y, int focu
   const bool highlightFocus = currentFocusHighlightEnabled();
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyph70For(word[i], typeface);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  while (pos < word.length()) {
+    auto result = utf8NextCodepoint(word.c_str(), word.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyph70ForCodepoint(codepoint, typeface);
     const uint16_t color =
-        (highlightFocus && static_cast<int>(i) == focusIndex) ? focusColor() : wordColor();
-    drawSerif70Glyph(cursorX + glyph.xOffset, y, word[i], color, typeface);
-    int tracked = trackedAdvance(glyph.xAdvance, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyph70For(word[i + 1], typeface);
-      tracked -= opticalKerningAdjustment(word[i], word[i + 1], glyph.xOffset, glyph.width, tracked,
-                                          nextGlyph.xOffset, regularDesiredGap());
+        (highlightFocus && static_cast<int>(charIndex) == focusIndex) ? focusColor() : wordColor();
+    drawSerif70GlyphCodepoint(cursorX + glyph.xOffset, y, codepoint, color, typeface);
+    const bool hasNext = pos + consumed < word.length();
+    int tracked = trackedAdvanceForNext(glyph.xAdvance, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), word.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyph70ForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
+      tracked -= opticalKerningAdjustment(currentChar, nextChar, glyph.xOffset, glyph.width,
+                                          tracked, nextGlyph.xOffset, regularDesiredGap());
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    ++charIndex;
   }
 }
 
@@ -1821,23 +2224,35 @@ void DisplayManager::drawRsvpWordScaledPercentAt(const String &word, int x, int 
   const bool highlightFocus = currentFocusHighlightEnabled();
   int cursorX = x;
   const ReaderTypeface typeface = effectiveReaderTypefaceForText(word);
-  for (size_t i = 0; i < word.length(); ++i) {
-    const ReaderGlyph glyph = glyphFor(word[i], typeface);
+  size_t pos = 0;
+  size_t charIndex = 0;
+  while (pos < word.length()) {
+    auto result = utf8NextCodepoint(word.c_str(), word.length(), pos);
+    uint32_t codepoint = result.first;
+    size_t consumed = result.second;
+    const ReaderGlyph glyph = glyphForCodepoint(codepoint, typeface);
     const uint16_t color =
-        (highlightFocus && static_cast<int>(i) == focusIndex) ? focusColor() : wordColor();
+        (highlightFocus && static_cast<int>(charIndex) == focusIndex) ? focusColor() : wordColor();
     const int xOffset = scaledSignedPercent(glyph.xOffset, scalePercent);
     const int width =
         glyph.width == 0 ? 0 : scaledPercentDimension(glyph.width, scalePercent);
-    drawSerifGlyphScaledPercent(cursorX + xOffset, y, word[i], color, scalePercent, typeface);
-    int tracked = trackedAdvanceScaledPercent(glyph.xAdvance, scalePercent, i, word.length());
-    if (i + 1 < word.length()) {
-      const ReaderGlyph nextGlyph = glyphFor(word[i + 1], typeface);
+    drawSerifGlyphScaledPercentCodepoint(cursorX + xOffset, y, codepoint, color, scalePercent, typeface);
+    const bool hasNext = pos + consumed < word.length();
+    int tracked = trackedAdvanceScaledPercentForNext(glyph.xAdvance, scalePercent, hasNext);
+    if (hasNext) {
+      auto nextResult = utf8NextCodepoint(word.c_str(), word.length(), pos + consumed);
+      uint32_t nextCp = nextResult.first;
+      const ReaderGlyph nextGlyph = glyphForCodepoint(nextCp, typeface);
+      char currentChar = static_cast<char>(codepoint < 256 ? codepoint : '?');
+      char nextChar = static_cast<char>(nextCp < 256 ? nextCp : '?');
       tracked -= opticalKerningAdjustment(
-          word[i], word[i + 1], xOffset, width, tracked,
+          currentChar, nextChar, xOffset, width, tracked,
           scaledSignedPercent(nextGlyph.xOffset, scalePercent),
           scaledPercentDesiredGap(scalePercent));
     }
     cursorX += std::max(1, tracked);
+    pos += consumed;
+    charIndex++;
   }
 }
 

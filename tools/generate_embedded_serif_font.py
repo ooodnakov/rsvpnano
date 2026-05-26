@@ -4,7 +4,7 @@ Font generator for RSVP Nano with UTF-8 support.
 Generates embedded font headers with ASCII, Latin-1, Cyrillic, and Greek support.
 
 Usage:
-    python generate_embedded_serif_font.py --font-name NotoSans --point-size 52
+    python generate_embedded_serif_font.py --font-name NotoSans-Regular --point-size 52
     python generate_embedded_serif_font.py --include-cyrillic --include-greek
 """
 
@@ -33,7 +33,7 @@ LAST_GREEK = 0x03FF
 ESCAPE_PREFIX = 0xF0
 
 # Default settings
-DEFAULT_FONT_NAME = "NotoSans"
+DEFAULT_FONT_NAME = "NotoSans-Regular"
 DEFAULT_FONT_SEARCH_PATHS = [
     "/usr/share/fonts/truetype/noto",
     "/usr/share/fonts/truetype/dejavu",
@@ -274,60 +274,44 @@ CYRILLIC_GLYPH_NAMES = {
 
 # Greek glyph names
 GREEK_GLYPH_NAMES = {
-    0x0370: "Greek_Pollian", 0x0371: "Greek_Archaic",
-    0x0372: "Greek_Psammetichus", 0x0373: "Greek_Sampi",
-    0x0374: "Greek_NumeralSign", 0x0375: "Greek_LowerNumeralSign",
-    0x0376: "Greek_PanCyrillic", 0x0377: "Greek_SampiArchaic",
-    0x0378: "Greek_Unavailable", 0x0379: "Greek_Unavailable2",
-    0x037A: "Greek_Ypogegrammeni", 0x037B: "Greek_RhoWithStroke",
-    0x037C: "Greek_Semicolon", 0x037D: "Greek_Colon",
-    0x037E: "Greek_QuestionMark", 0x037F: "Greek_Exponential",
-    0x0380: "Greek_Unavailable3", 0x0381: "Greek_Unavailable4",
-    0x0382: "Greek_Unavailable5", 0x0383: "Greek_Unavailable6",
-    0x0384: "Greek_Tonos", 0x0385: "Greek_DialytikaTonos",
-    0x0386: "Greek_AlphaWithTonos", 0x0387: "Greek_AnoTelia",
-    0x0388: "Greek_EpsilonWithTonos", 0x0389: "Greek_EtaWithTonos",
-    0x038A: "Greek_IotaWithTonos", 0x038B: "Greek_Unavailable7",
-    0x038C: "Greek_OmicronWithTonos", 0x038D: "Greek_Unavailable8",
-    0x038E: "Greek_UpsilonWithTonos", 0x038F: "Greek_OmegaWithTonos",
-    0x0390: "Greek_iotaWithDialytikaAndTonos",
-    0x0391: "Greek_Alpha", 0x03B1: "Greek_alpha",
-    0x0392: "Greek_Beta", 0x03B2: "Greek_beta",
-    0x0393: "Greek_Gamma", 0x03B3: "Greek_gamma",
-    0x0394: "Greek_Delta", 0x03B4: "Greek_delta",
-    0x0395: "Greek_Epsilon", 0x03B5: "Greek_epsilon",
-    0x0396: "Greek_Zeta", 0x03B6: "Greek_zeta",
-    0x0397: "Greek_Eta", 0x03B7: "Greek_eta",
-    0x0398: "Greek_Theta", 0x03B8: "Greek_theta",
-    0x0399: "Greek_Iota", 0x03B9: "Greek_iota",
-    0x039A: "Greek_Kappa", 0x03BA: "Greek_kappa",
-    0x039B: "Greek_Lambda", 0x03BB: "Greek_lambda",
-    0x039C: "Greek_Mu", 0x03BC: "Greek_mu",
-    0x039D: "Greek_Nu", 0x03BD: "Greek_nu",
-    0x039E: "Greek_Xi", 0x03BE: "Greek_xi",
-    0x039F: "Greek_Omicron", 0x03BF: "Greek_omicron",
-    0x03A0: "Greek_Pi", 0x03C0: "Greek_pi",
-    0x03A1: "Greek_Rho", 0x03C1: "Greek_rho",
-    0x03A2: "Greek_FinalSigma", 0x03C2: "Greek_finalsigma",
-    0x03A3: "Greek_Sigma", 0x03C3: "Greek_sigma",
-    0x03A4: "Greek_Tau", 0x03C4: "Greek_tau",
-    0x03A5: "Greek_Upsilon", 0x03C5: "Greek_upsilon",
-    0x03A6: "Greek_Phi", 0x03C6: "Greek_phi",
-    0x03A7: "Greek_Chi", 0x03C7: "Greek_chi",
-    0x03A8: "Greek_Psi", 0x03C8: "Greek_psi",
-    0x03A9: "Greek_Omega", 0x03C9: "Greek_omega",
-    0x03AA: "Greek_IotaWithDialytika", 0x03AB: "Greek_UpsilonWithDialytika",
-    0x03AC: "Greek_AlphaWithTonos", 0x03AD: "Greek_EpsilonWithTonos",
-    0x03AE: "Greek_EtaWithTonos", 0x03AF: "Greek_IotaWithTonos",
-    0x03B0: "Greek_UpsilonWithDialytikaAndTonos",
-    0x03D0: "Greek_BetaSymbol", 0x03D1: "Greek_ThetaSymbol",
-    0x03D2: "Greek_Upsilon1", 0x03D3: "Greek_Upsilon2",
-    0x03D4: "Greek_Upsilon3", 0x03D5: "Greek_PhiSymbol",
-    0x03D6: "Greek_PiSymbol", 0x03D7: "Greek_KaiSymbol",
-    0x03D8: "Greek_ArchaicKoppa", 0x03D9: "Greek_SmallKoppa",
-    0x03DA: "Greek_Stigma", 0x03DB: "Greek_SmallStigma",
-    0x03DC: "Greek_Digamma", 0x03DD: "Greek_SmallDigamma",
-    0x03DE: "Greek_Koppa", 0x03DF: "Greek_SmallKoppa",
+    0x0384: "tonos", 0x0385: "dieresistonos",
+    0x0386: "Alphatonos", 0x0387: "anoteleia",
+    0x0388: "Epsilontonos", 0x0389: "Etatonos",
+    0x038A: "Iotatonos", 0x038C: "Omicrontonos",
+    0x038E: "Upsilontonos", 0x038F: "Omegatonos",
+    0x0390: "iotadieresistonos",
+    0x0391: "Alpha", 0x03B1: "alpha",
+    0x0392: "Beta", 0x03B2: "beta",
+    0x0393: "Gamma", 0x03B3: "gamma",
+    0x0394: "Delta", 0x03B4: "delta",
+    0x0395: "Epsilon", 0x03B5: "epsilon",
+    0x0396: "Zeta", 0x03B6: "zeta",
+    0x0397: "Eta", 0x03B7: "eta",
+    0x0398: "Theta", 0x03B8: "theta",
+    0x0399: "Iota", 0x03B9: "iota",
+    0x039A: "Kappa", 0x03BA: "kappa",
+    0x039B: "Lambda", 0x03BB: "lambda",
+    0x039C: "Mu", 0x03BC: "mu",
+    0x039D: "Nu", 0x03BD: "nu",
+    0x039E: "Xi", 0x03BE: "xi",
+    0x039F: "Omicron", 0x03BF: "omicron",
+    0x03A0: "Pi", 0x03C0: "pi",
+    0x03A1: "Rho", 0x03C1: "rho",
+    0x03C2: "finalsigma",
+    0x03A3: "Sigma", 0x03C3: "sigma",
+    0x03A4: "Tau", 0x03C4: "tau",
+    0x03A5: "Upsilon", 0x03C5: "upsilon",
+    0x03A6: "Phi", 0x03C6: "phi",
+    0x03A7: "Chi", 0x03C7: "chi",
+    0x03A8: "Psi", 0x03C8: "psi",
+    0x03A9: "Omega", 0x03C9: "omega",
+    0x03AA: "Iotadieresis", 0x03AB: "Upsilondieresis",
+    0x03AC: "alphatonos", 0x03AD: "epsilontonos",
+    0x03AE: "etatonos", 0x03AF: "iotatonos",
+    0x03B0: "upsilondieresistonos",
+    0x03CA: "iotadieresis", 0x03CB: "upsilondieresis",
+    0x03CC: "omicrontonos", 0x03CD: "upsilontonos",
+    0x03CE: "omegatonos",
     0x03E0: "Greek_Sampi", 0x03E1: "Greek_SmallSampi",
     0x03E2: "Coptic_Ala", 0x03E3: "coptic_ala",
     0x03E4: "Coptic_Alfa", 0x03E5: "coptic_alfa",
@@ -444,12 +428,7 @@ def glyph_script_for_codepoint(codepoint: int) -> str:
     if codepoint <= 0xFF:
         escaped = escape_postscript_char(chr(codepoint))
         return f"({escaped}) show"
-    # For extended Unicode, use UTF-16BE hex encoding
-    if codepoint <= 0xFFFF:
-        high = (codepoint >> 8) & 0xFF
-        low = codepoint & 0xFF
-        return f"<{high:02X}{low:02X}> cvn glyphshow"
-    return f"<{codepoint:08X}> cvn glyphshow"
+    return f"/{glyph_name_for_codepoint(codepoint)} glyphshow"
 
 
 def font_setup_for_codepoint(codepoint: int, font_name: str, point_size: int) -> str:
@@ -476,6 +455,12 @@ def is_cyrillic_codepoint(codepoint: int) -> bool:
 
 def is_greek_codepoint(codepoint: int) -> bool:
     return FIRST_GREEK <= codepoint <= LAST_GREEK
+
+
+def script_min_advance(codepoint: int, x_offset: int, glyph_width: int) -> int:
+    if not (is_cyrillic_codepoint(codepoint) or is_greek_codepoint(codepoint)):
+        return 1
+    return max(1, x_offset + glyph_width + 2)
 
 
 def render_glyph(
@@ -656,6 +641,8 @@ def main() -> None:
             x_offset = 0
             glyph_width = 0
             x_advance = advance_width_for_glyph(codepoint, args.font_name, args.point_size, font_search_paths)
+
+        x_advance = max(x_advance, script_min_advance(codepoint, x_offset, glyph_width))
 
         # Create comment
         if codepoint <= 0xFF:

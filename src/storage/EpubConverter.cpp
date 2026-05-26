@@ -957,7 +957,14 @@ String normalizeDisplayText(const String &text) {
     const size_t before = index;
     uint32_t codepoint = 0;
     if (decodeUtf8Codepoint(text, index, codepoint)) {
-      appendDisplayApproximation(normalized, codepoint);
+      if ((codepoint >= 0x0400 && codepoint <= 0x04FF) ||
+          (codepoint >= 0x0370 && codepoint <= 0x03FF)) {
+        for (size_t j = before; j < index; ++j) {
+          normalized += text[j];
+        }
+      } else {
+        appendDisplayApproximation(normalized, codepoint);
+      }
       continue;
     }
 

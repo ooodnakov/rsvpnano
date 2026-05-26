@@ -91,6 +91,7 @@ enum MenuItem : size_t {
   MenuFocusTimer,
   MenuSettings,
   MenuSdCardCheck,
+  MenuRebuildIndex,
   MenuRssFeeds,
   MenuCompanionSync,
 #if RSVP_USB_TRANSFER_ENABLED
@@ -2512,6 +2513,9 @@ void App::moveMenuSelection(int direction) {
       case MenuSdCardCheck:
         selectedLabel = "SD card check";
         break;
+      case MenuRebuildIndex:
+        selectedLabel = "Rebuild index";
+        break;
       case MenuRssFeeds:
         selectedLabel = "RSS feeds";
         break;
@@ -2587,6 +2591,9 @@ void App::selectMenuItem(uint32_t nowMs) {
       return;
     case MenuSdCardCheck:
       runSdCardCheck(nowMs);
+      return;
+    case MenuRebuildIndex:
+      runRebuildIndex(nowMs);
       return;
     case MenuRssFeeds:
       runRssFeedCheck(nowMs);
@@ -4103,6 +4110,25 @@ void App::runSdCardCheck(uint32_t nowMs) {
   renderMenu();
 }
 
+void App::runRebuildIndex(uint32_t nowMs) {
+  (void)nowMs;
+  Serial.println("[app] rebuilding all book indexes");
+  display_.renderStatus("Rebuild index", "Scanning books", "Please wait");
+
+  const int count = storage_.rebuildAllIndexes();
+  if (count >= 0) {
+    display_.renderStatus("Rebuild index", "Indexes rebuilt", String(count) + " books");
+    Serial.printf("[app] rebuilt %d book indexes\n", count);
+  } else {
+    display_.renderStatus("Rebuild index", "Failed", "SD error?");
+    Serial.println("[app] index rebuild failed");
+  }
+  delay(2600);
+
+  menuScreen_ = MenuScreen::Main;
+  renderMenu();
+}
+
 void App::runSdCardRepair(uint32_t nowMs) {
   (void)nowMs;
   Serial.println("[app] repairing SD card folder layout");
@@ -5089,6 +5115,7 @@ void App::renderMainMenu() {
   items.push_back("Focus Timer");
   items.push_back(uiText(UiText::Settings));
   items.push_back("SD card check");
+  items.push_back("Rebuild index");
   items.push_back("RSS feeds");
   items.push_back("Companion sync");
 #if RSVP_USB_TRANSFER_ENABLED
