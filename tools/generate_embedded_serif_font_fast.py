@@ -163,10 +163,11 @@ def is_greek_codepoint(codepoint: int) -> bool:
     return FIRST_GREEK <= codepoint <= LAST_GREEK
 
 
-def script_min_advance(codepoint: int, x_offset: int, glyph_width: int) -> int:
-    if not (is_cyrillic_codepoint(codepoint) or is_greek_codepoint(codepoint)):
+def visual_min_advance(codepoint: int, x_offset: int, glyph_width: int) -> int:
+    if glyph_width <= 0:
         return 1
-    return max(1, x_offset + glyph_width + 2)
+    gap = 2 if is_cyrillic_codepoint(codepoint) or is_greek_codepoint(codepoint) else 1
+    return max(1, x_offset + glyph_width + gap)
 
 
 def parse_pgm(path: pathlib.Path) -> tuple[int, int, bytes]:
@@ -428,7 +429,7 @@ def main() -> None:
                 glyph_width = 0
                 x_offset = 0
 
-            x_advance = max(x_advance, script_min_advance(codepoint, x_offset, glyph_width))
+            x_advance = max(x_advance, visual_min_advance(codepoint, x_offset, glyph_width))
 
             # Comment
             if codepoint <= 0xFF:

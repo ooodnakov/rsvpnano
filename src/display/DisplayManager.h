@@ -167,6 +167,8 @@ class DisplayManager {
   void drawSerifTextScaledAt(const String &text, int x, int y, uint16_t color,
                              uint8_t scalePercent);
   void drawTinyGlyph(int x, int y, char c, uint16_t color, int scale);
+  void drawTinyGlyphRows(int x, int y, const uint8_t *rows, uint16_t color, int scale);
+  void drawUiGlyphScaled(int x, int y, uint32_t codepoint, uint16_t color, int scale);
   void drawTinyTextAt(const String &text, int x, int y, uint16_t color, int scale);
   void drawTinyTextCentered(const String &text, int y, uint16_t color, int scale);
   void drawTinyTextCentered(const String &text, int y, uint16_t color, int scale, int width,

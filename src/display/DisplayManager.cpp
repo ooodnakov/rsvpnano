@@ -15,6 +15,7 @@
 #include "display/EmbeddedOpenDyslexicFont70.h"
 #include "display/EmbeddedSerifFont.h"
 #include "display/EmbeddedSerifFont70.h"
+#include "display/EmbeddedUiFont.h"
 #include "display/axs15231b.h"
 #include "text/LatinText.h"
 
@@ -155,6 +156,11 @@ uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
 
 struct TinyGlyph {
   char c;
+  uint8_t rows[kTinyGlyphHeight];
+};
+
+struct TinyUnicodeGlyph {
+  uint32_t codepoint;
   uint8_t rows[kTinyGlyphHeight];
 };
 
@@ -356,6 +362,99 @@ constexpr TinyGlyph kTinyGlyphs[] = {
     {'_', {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F}},
 };
 
+constexpr TinyUnicodeGlyph kTinyUnicodeGlyphs[] = {
+    {0x0410, {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},  // А
+    {0x0411, {0x1F, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x1E}},  // Б
+    {0x0412, {0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E}},  // В
+    {0x0413, {0x1F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10}},  // Г
+    {0x0414, {0x0F, 0x09, 0x09, 0x09, 0x11, 0x1F, 0x11}},  // Д
+    {0x0415, {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F}},  // Е
+    {0x0401, {0x0A, 0x00, 0x1F, 0x10, 0x1E, 0x10, 0x1F}},  // Ё
+    {0x0416, {0x15, 0x15, 0x0E, 0x04, 0x0E, 0x15, 0x15}},  // Ж
+    {0x0417, {0x1E, 0x01, 0x01, 0x0E, 0x01, 0x01, 0x1E}},  // З
+    {0x0418, {0x11, 0x13, 0x15, 0x15, 0x19, 0x11, 0x11}},  // И
+    {0x0419, {0x0A, 0x04, 0x11, 0x13, 0x15, 0x19, 0x11}},  // Й
+    {0x041A, {0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11}},  // К
+    {0x041B, {0x07, 0x09, 0x09, 0x09, 0x09, 0x09, 0x11}},  // Л
+    {0x041C, {0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11}},  // М
+    {0x041D, {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},  // Н
+    {0x041E, {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}},  // О
+    {0x041F, {0x1F, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}},  // П
+    {0x0420, {0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10}},  // Р
+    {0x0421, {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E}},  // С
+    {0x0422, {0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}},  // Т
+    {0x0423, {0x11, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x1E}},  // У
+    {0x0424, {0x04, 0x0E, 0x15, 0x15, 0x0E, 0x04, 0x04}},  // Ф
+    {0x0425, {0x11, 0x0A, 0x04, 0x04, 0x04, 0x0A, 0x11}},  // Х
+    {0x0426, {0x12, 0x12, 0x12, 0x12, 0x12, 0x1F, 0x01}},  // Ц
+    {0x0427, {0x11, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x01}},  // Ч
+    {0x0428, {0x15, 0x15, 0x15, 0x15, 0x15, 0x15, 0x1F}},  // Ш
+    {0x0429, {0x15, 0x15, 0x15, 0x15, 0x15, 0x1F, 0x01}},  // Щ
+    {0x042A, {0x18, 0x08, 0x08, 0x0E, 0x09, 0x09, 0x0E}},  // Ъ
+    {0x042B, {0x11, 0x11, 0x11, 0x19, 0x15, 0x15, 0x19}},  // Ы
+    {0x042C, {0x10, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x1E}},  // Ь
+    {0x042D, {0x1E, 0x01, 0x01, 0x0F, 0x01, 0x01, 0x1E}},  // Э
+    {0x042E, {0x12, 0x15, 0x15, 0x1D, 0x15, 0x15, 0x12}},  // Ю
+    {0x042F, {0x0F, 0x11, 0x11, 0x0F, 0x05, 0x09, 0x11}},  // Я
+    {0x0391, {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},  // Α
+    {0x0392, {0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E}},  // Β
+    {0x0393, {0x1F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10}},  // Γ
+    {0x0394, {0x04, 0x0A, 0x0A, 0x11, 0x11, 0x1F, 0x11}},  // Δ
+    {0x0395, {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F}},  // Ε
+    {0x0396, {0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F}},  // Ζ
+    {0x0397, {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},  // Η
+    {0x0398, {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x0E}},  // Θ
+    {0x0399, {0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E}},  // Ι
+    {0x039A, {0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11}},  // Κ
+    {0x039B, {0x04, 0x0A, 0x0A, 0x11, 0x11, 0x11, 0x11}},  // Λ
+    {0x039C, {0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11}},  // Μ
+    {0x039D, {0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11}},  // Ν
+    {0x039E, {0x1F, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x1F}},  // Ξ
+    {0x039F, {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}},  // Ο
+    {0x03A0, {0x1F, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}},  // Π
+    {0x03A1, {0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10}},  // Ρ
+    {0x03A3, {0x1F, 0x10, 0x08, 0x04, 0x08, 0x10, 0x1F}},  // Σ
+    {0x03A4, {0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}},  // Τ
+    {0x03A5, {0x11, 0x0A, 0x04, 0x04, 0x04, 0x04, 0x04}},  // Υ
+    {0x03A6, {0x04, 0x0E, 0x15, 0x15, 0x0E, 0x04, 0x04}},  // Φ
+    {0x03A7, {0x11, 0x0A, 0x04, 0x04, 0x04, 0x0A, 0x11}},  // Χ
+    {0x03A8, {0x15, 0x15, 0x15, 0x0E, 0x04, 0x04, 0x04}},  // Ψ
+    {0x03A9, {0x0E, 0x11, 0x11, 0x11, 0x0A, 0x1B, 0x11}},  // Ω
+    {0x0430, {0x00, 0x00, 0x0E, 0x01, 0x0F, 0x11, 0x0F}},  // а
+    {0x0431, {0x0F, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E}},  // б
+    {0x0432, {0x00, 0x00, 0x1E, 0x11, 0x1E, 0x11, 0x1E}},  // в
+    {0x0433, {0x00, 0x00, 0x1F, 0x10, 0x10, 0x10, 0x10}},  // г
+    {0x0434, {0x00, 0x00, 0x0F, 0x09, 0x09, 0x1F, 0x11}},  // д
+    {0x0435, {0x00, 0x00, 0x0E, 0x11, 0x1F, 0x10, 0x0E}},  // е
+    {0x0451, {0x0A, 0x00, 0x0E, 0x11, 0x1F, 0x10, 0x0E}},  // ё
+    {0x0436, {0x00, 0x00, 0x15, 0x0E, 0x04, 0x0E, 0x15}},  // ж
+    {0x0437, {0x00, 0x00, 0x1E, 0x01, 0x0E, 0x01, 0x1E}},  // з
+    {0x0438, {0x00, 0x00, 0x11, 0x13, 0x15, 0x19, 0x11}},  // и
+    {0x0439, {0x0A, 0x04, 0x11, 0x13, 0x15, 0x19, 0x11}},  // й
+    {0x043A, {0x00, 0x00, 0x11, 0x12, 0x1C, 0x12, 0x11}},  // к
+    {0x043B, {0x00, 0x00, 0x07, 0x09, 0x09, 0x09, 0x11}},  // л
+    {0x043C, {0x00, 0x00, 0x11, 0x1B, 0x15, 0x11, 0x11}},  // м
+    {0x043D, {0x00, 0x00, 0x11, 0x11, 0x1F, 0x11, 0x11}},  // н
+    {0x043E, {0x00, 0x00, 0x0E, 0x11, 0x11, 0x11, 0x0E}},  // о
+    {0x043F, {0x00, 0x00, 0x1F, 0x11, 0x11, 0x11, 0x11}},  // п
+    {0x0440, {0x00, 0x00, 0x1E, 0x11, 0x1E, 0x10, 0x10}},  // р
+    {0x0441, {0x00, 0x00, 0x0E, 0x11, 0x10, 0x11, 0x0E}},  // с
+    {0x0442, {0x00, 0x00, 0x1F, 0x04, 0x04, 0x04, 0x04}},  // т
+    {0x0443, {0x00, 0x00, 0x11, 0x11, 0x0F, 0x01, 0x1E}},  // у
+    {0x0444, {0x00, 0x04, 0x0E, 0x15, 0x15, 0x0E, 0x04}},  // ф
+    {0x0445, {0x00, 0x00, 0x11, 0x0A, 0x04, 0x0A, 0x11}},  // х
+    {0x0446, {0x00, 0x00, 0x12, 0x12, 0x12, 0x1F, 0x01}},  // ц
+    {0x0447, {0x00, 0x00, 0x11, 0x11, 0x0F, 0x01, 0x01}},  // ч
+    {0x0448, {0x00, 0x00, 0x15, 0x15, 0x15, 0x15, 0x1F}},  // ш
+    {0x0449, {0x00, 0x00, 0x15, 0x15, 0x15, 0x1F, 0x01}},  // щ
+    {0x044A, {0x00, 0x00, 0x18, 0x08, 0x0E, 0x09, 0x0E}},  // ъ
+    {0x044B, {0x00, 0x00, 0x11, 0x11, 0x19, 0x15, 0x19}},  // ы
+    {0x044C, {0x00, 0x00, 0x10, 0x10, 0x1E, 0x11, 0x1E}},  // ь
+    {0x044D, {0x00, 0x00, 0x1E, 0x01, 0x0F, 0x01, 0x1E}},  // э
+    {0x044E, {0x00, 0x00, 0x12, 0x15, 0x1D, 0x15, 0x12}},  // ю
+    {0x044F, {0x00, 0x00, 0x0F, 0x11, 0x0F, 0x05, 0x09}},  // я
+};
+
 ReaderGlyph serifGlyphForByte(uint8_t value) {
   if (value < kEmbeddedSerifFirstChar || value > kEmbeddedSerifLastChar) {
     value = static_cast<uint8_t>('?');
@@ -409,6 +508,102 @@ ReaderGlyph glyphFor(char c, DisplayManager::ReaderTypeface typeface) {
 
 ReaderGlyph glyphFor(char c) { return glyphFor(c, currentReaderTypeface()); }
 
+const uint8_t *tinyRowsForCodepoint(uint32_t codepoint);
+
+uint32_t uppercaseTinyCodepoint(uint32_t codepoint) {
+  if (codepoint == 0x0451) {
+    return 0x0401;
+  }
+  if (codepoint >= 0x0430 && codepoint <= 0x044F) {
+    return codepoint - 0x20;
+  }
+  if (codepoint >= 0x03B1 && codepoint <= 0x03C1) {
+    return codepoint - 0x20;
+  }
+  if (codepoint == 0x03C2 || codepoint == 0x03C3) {
+    return 0x03A3;
+  }
+  if (codepoint >= 0x03C4 && codepoint <= 0x03C9) {
+    return codepoint - 0x20;
+  }
+  if (codepoint == 0x0390 || codepoint == 0x03AF || codepoint == 0x03CA) {
+    return 0x0399;
+  }
+  if (codepoint == 0x03B0 || codepoint == 0x03CD || codepoint == 0x03CB) {
+    return 0x03A5;
+  }
+  if (codepoint == 0x03AC) {
+    return 0x0391;
+  }
+  if (codepoint == 0x03AD) {
+    return 0x0395;
+  }
+  if (codepoint == 0x03AE) {
+    return 0x0397;
+  }
+  if (codepoint == 0x03CC) {
+    return 0x039F;
+  }
+  if (codepoint == 0x03CE) {
+    return 0x03A9;
+  }
+  if (codepoint == 0x0386) {
+    return 0x0391;
+  }
+  if (codepoint == 0x0388) {
+    return 0x0395;
+  }
+  if (codepoint == 0x0389) {
+    return 0x0397;
+  }
+  if (codepoint == 0x038A || codepoint == 0x03AA) {
+    return 0x0399;
+  }
+  if (codepoint == 0x038C) {
+    return 0x039F;
+  }
+  if (codepoint == 0x038E || codepoint == 0x03AB) {
+    return 0x03A5;
+  }
+  if (codepoint == 0x038F) {
+    return 0x03A9;
+  }
+  return codepoint;
+}
+
+ReaderGlyph uiGlyphForCodepoint(uint32_t codepoint) {
+  if (codepoint <= 0xFF) {
+    uint8_t value = static_cast<uint8_t>(codepoint);
+    if (value >= kEmbeddedUiFirstChar && value <= kEmbeddedUiLastChar) {
+      const auto &g = kEmbeddedUiGlyphs[value - kEmbeddedUiFirstChar];
+      return {kEmbeddedUiBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+              kEmbeddedUiHeight};
+    }
+  }
+
+  if (codepoint >= kEmbeddedUiFirstCyrillic && codepoint <= kEmbeddedUiLastCyrillic) {
+    constexpr size_t latinGlyphCount = kEmbeddedUiLastChar - kEmbeddedUiFirstChar + 1;
+    const size_t glyphIndex = latinGlyphCount + (codepoint - kEmbeddedUiFirstCyrillic);
+    const auto &g = kEmbeddedUiGlyphs[glyphIndex];
+    return {kEmbeddedUiBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+            kEmbeddedUiHeight};
+  }
+
+  if (codepoint >= kEmbeddedUiFirstGreek && codepoint <= kEmbeddedUiLastGreek) {
+    constexpr size_t latinGlyphCount = kEmbeddedUiLastChar - kEmbeddedUiFirstChar + 1;
+    constexpr size_t cyrillicGlyphCount = kEmbeddedUiLastCyrillic - kEmbeddedUiFirstCyrillic + 1;
+    const size_t glyphIndex =
+        latinGlyphCount + cyrillicGlyphCount + (codepoint - kEmbeddedUiFirstGreek);
+    const auto &g = kEmbeddedUiGlyphs[glyphIndex];
+    return {kEmbeddedUiBitmaps + g.bitmapOffset, g.xOffset, g.width, g.xAdvance,
+            kEmbeddedUiHeight};
+  }
+
+  const auto &fallback = kEmbeddedUiGlyphs['?' - kEmbeddedUiFirstChar];
+  return {kEmbeddedUiBitmaps + fallback.bitmapOffset, fallback.xOffset, fallback.width,
+          fallback.xAdvance, kEmbeddedUiHeight};
+}
+
 // UTF-8 aware helper: get codepoint at position and advance
 // Returns (codepoint, bytesConsumed)
 inline std::pair<uint32_t, size_t> utf8NextCodepoint(const char* text, size_t len, size_t pos) {
@@ -432,6 +627,59 @@ inline std::pair<uint32_t, size_t> utf8NextCodepoint(const char* text, size_t le
     return std::make_pair(((bytes[0] & 0x07) << 18) | ((bytes[1] & 0x3F) << 12) | ((bytes[2] & 0x3F) << 6) | (bytes[3] & 0x3F), 4);
   }
   return std::make_pair(bytes[0], 1);  // Invalid
+}
+
+bool usesGeneratedUiGlyph(uint32_t codepoint) {
+  if (tinyRowsForCodepoint(codepoint) != nullptr) {
+    return false;
+  }
+  return (codepoint >= 0x0400 && codepoint <= 0x04FF) ||
+         (codepoint >= 0x0370 && codepoint <= 0x03FF);
+}
+
+int scaledUiDimension(int value, int scale) {
+  return std::max(1, (value * std::max(1, scale) + 1) / 2);
+}
+
+int scaledUiSignedDimension(int value, int scale) {
+  scale = std::max(1, scale);
+  if (value >= 0) {
+    return (value * scale + 1) / 2;
+  }
+  return -(((-value) * scale + 1) / 2);
+}
+
+int uiGlyphBodyAdvance(const ReaderGlyph &glyph) {
+  if (glyph.width <= 0) {
+    return std::max(1, glyph.xAdvance);
+  }
+  return std::max(1, glyph.xOffset + glyph.width);
+}
+
+int tinyCodepointWidth(uint32_t codepoint, int scale) {
+  if (tinyRowsForCodepoint(codepoint) != nullptr) {
+    return kTinyGlyphWidth * std::max(1, scale);
+  }
+  return scaledUiDimension(uiGlyphBodyAdvance(uiGlyphForCodepoint(codepoint)), scale);
+}
+
+void removeLastUtf8Codepoint(String &text) {
+  if (text.isEmpty()) {
+    return;
+  }
+  size_t start = text.length() - 1;
+  while (start > 0 && (LatinText::byteValue(text[start]) & 0xC0) == 0x80) {
+    --start;
+  }
+  text.remove(start);
+}
+
+void removeFirstUtf8Codepoint(String &text) {
+  if (text.isEmpty()) {
+    return;
+  }
+  const auto result = utf8NextCodepoint(text.c_str(), text.length(), 0);
+  text.remove(0, std::max<size_t>(1, result.second));
 }
 
 
@@ -674,6 +922,22 @@ const uint8_t *tinyRowsFor(char c) {
   }
 
   return kTinyGlyphs[0].rows;
+}
+
+const uint8_t *tinyRowsForCodepoint(uint32_t codepoint) {
+  if (codepoint <= 0xFF) {
+    return tinyRowsFor(static_cast<char>(codepoint));
+  }
+
+  codepoint = uppercaseTinyCodepoint(codepoint);
+
+  for (const TinyUnicodeGlyph &glyph : kTinyUnicodeGlyphs) {
+    if (glyph.codepoint == codepoint) {
+      return glyph.rows;
+    }
+  }
+
+  return nullptr;
 }
 
 uint16_t panelColor(uint16_t rgb565) {
@@ -993,7 +1257,7 @@ int scaledWordWidthPercent(const String &word, uint8_t scalePercent) {
 ReaderTextStyle readerTextStyle(uint8_t fontSizeLevel) {
   static constexpr ReaderTextStyle kStyles[] = {
       {100, kPhantomCurrentGapLarge, kPhantomAlphaLarge},
-      {70, kPhantomCurrentGapMedium, kPhantomAlphaMedium},
+      {100, kPhantomCurrentGapMedium, kPhantomAlphaMedium},
       {50, kPhantomCurrentGapSmall, kPhantomAlphaSmall},
   };
 
@@ -1441,8 +1705,22 @@ int DisplayManager::measureTinyTextWidth(const String &text, int scale) const {
   if (text.isEmpty()) {
     return 0;
   }
-  return static_cast<int>(text.length()) * (kTinyGlyphWidth + kTinyGlyphSpacing) * scale -
-         kTinyGlyphSpacing * scale;
+
+  int width = 0;
+  size_t pos = 0;
+  const size_t len = text.length();
+  while (pos < len) {
+    const auto result = utf8NextCodepoint(text.c_str(), len, pos);
+    const uint32_t codepoint = result.first;
+    const size_t consumed = std::max<size_t>(1, result.second);
+    const bool hasNext = pos + consumed < len;
+    width += tinyCodepointWidth(codepoint, scale);
+    if (hasNext) {
+      width += kTinyGlyphSpacing * std::max(1, scale);
+    }
+    pos += consumed;
+  }
+  return width;
 }
 
 String DisplayManager::fitSerifText(const String &text, int maxWidth, int divisor) const {
@@ -1505,7 +1783,7 @@ String DisplayManager::fitTinyText(const String &text, int maxWidth, int scale) 
   String fitted = text;
   const String ellipsis = "...";
   while (!fitted.isEmpty() && measureTinyTextWidth(fitted + ellipsis, scale) > maxWidth) {
-    fitted.remove(fitted.length() - 1);
+    removeLastUtf8Codepoint(fitted);
   }
   while (!fitted.isEmpty() && fitted[fitted.length() - 1] == ' ') {
     fitted.remove(fitted.length() - 1, 1);
@@ -1521,7 +1799,7 @@ String DisplayManager::fitTinyTextTrailing(const String &text, int maxWidth, int
   String fitted = text;
   const String ellipsis = "...";
   while (!fitted.isEmpty() && measureTinyTextWidth(ellipsis + fitted, scale) > maxWidth) {
-    fitted.remove(0, 1);
+    removeFirstUtf8Codepoint(fitted);
   }
   while (!fitted.isEmpty() && fitted[0] == ' ') {
     fitted.remove(0, 1);
@@ -2003,7 +2281,14 @@ void DisplayManager::drawSerifTextScaledAt(const String &text, int x, int y, uin
 }
 
 void DisplayManager::drawTinyGlyph(int x, int y, char c, uint16_t color, int scale) {
-  const uint8_t *rows = tinyRowsFor(c);
+  drawTinyGlyphRows(x, y, tinyRowsFor(c), color, scale);
+}
+
+void DisplayManager::drawTinyGlyphRows(int x, int y, const uint8_t *rows, uint16_t color,
+                                       int scale) {
+  if (rows == nullptr) {
+    rows = tinyRowsFor('?');
+  }
   const uint16_t panel = panelColor(color);
 
   for (int row = 0; row < kTinyGlyphHeight; ++row) {
@@ -2030,11 +2315,79 @@ void DisplayManager::drawTinyGlyph(int x, int y, char c, uint16_t color, int sca
   }
 }
 
+void DisplayManager::drawUiGlyphScaled(int x, int y, uint32_t codepoint, uint16_t color,
+                                       int scale) {
+  const ReaderGlyph glyph = uiGlyphForCodepoint(codepoint);
+  if (glyph.width <= 0 || glyph.height <= 0) {
+    return;
+  }
+
+  const int scaledWidth = scaledUiDimension(glyph.width, scale);
+  const int scaledHeight = scaledUiDimension(glyph.height, scale);
+  const int targetTinyHeight = kTinyGlyphHeight * std::max(1, scale);
+  const int dstYBase = y + ((targetTinyHeight - scaledHeight) / 2);
+
+  for (int dstRow = 0; dstRow < scaledHeight; ++dstRow) {
+    const int dstY = dstYBase + dstRow;
+    if (dstY < 0 || dstY >= kVirtualBufferHeight) {
+      continue;
+    }
+
+    const int sourceYStart = (dstRow * glyph.height) / scaledHeight;
+    const int sourceYEnd =
+        std::min(glyph.height, ((dstRow + 1) * glyph.height + scaledHeight - 1) / scaledHeight);
+    for (int dstCol = 0; dstCol < scaledWidth; ++dstCol) {
+      const int dstX = x + dstCol;
+      if (dstX < 0 || dstX >= kVirtualBufferWidth) {
+        continue;
+      }
+
+      const int sourceXStart = (dstCol * glyph.width) / scaledWidth;
+      const int sourceXEnd =
+          std::min(glyph.width, ((dstCol + 1) * glyph.width + scaledWidth - 1) / scaledWidth);
+      uint32_t alphaSum = 0;
+      uint32_t sampleCount = 0;
+      for (int sourceY = sourceYStart; sourceY < sourceYEnd; ++sourceY) {
+        for (int sourceX = sourceXStart; sourceX < sourceXEnd; ++sourceX) {
+          alphaSum += glyph.bitmap[sourceY * glyph.width + sourceX];
+          ++sampleCount;
+        }
+      }
+
+      const uint8_t alpha =
+          sampleCount == 0 ? 0 : static_cast<uint8_t>(alphaSum / sampleCount);
+      if (alpha < kGlyphAlphaThreshold) {
+        continue;
+      }
+      virtualFrame_[dstY * kVirtualBufferWidth + dstX] =
+          panelColor(blendOverBackground(color, alpha));
+    }
+  }
+}
+
 void DisplayManager::drawTinyTextAt(const String &text, int x, int y, uint16_t color, int scale) {
   int cursorX = x;
-  for (size_t i = 0; i < text.length(); ++i) {
-    drawTinyGlyph(cursorX, y, text[i], color, scale);
-    cursorX += (kTinyGlyphWidth + kTinyGlyphSpacing) * scale;
+  size_t pos = 0;
+  const size_t len = text.length();
+  while (pos < len) {
+    const auto result = utf8NextCodepoint(text.c_str(), len, pos);
+    const uint32_t codepoint = result.first;
+    const size_t consumed = std::max<size_t>(1, result.second);
+    const bool hasNext = pos + consumed < len;
+    if (const uint8_t *rows = tinyRowsForCodepoint(codepoint)) {
+      drawTinyGlyphRows(cursorX, y, rows, color, scale);
+    } else if (usesGeneratedUiGlyph(codepoint)) {
+      const ReaderGlyph glyph = uiGlyphForCodepoint(codepoint);
+      drawUiGlyphScaled(cursorX + scaledUiSignedDimension(glyph.xOffset, scale), y, codepoint,
+                        color, scale);
+    } else {
+      drawTinyGlyphRows(cursorX, y, tinyRowsFor('?'), color, scale);
+    }
+    cursorX += tinyCodepointWidth(codepoint, scale);
+    if (hasNext) {
+      cursorX += kTinyGlyphSpacing * std::max(1, scale);
+    }
+    pos += consumed;
   }
 }
 
@@ -2484,31 +2837,31 @@ void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const Strin
 
   lastRenderKey_ = renderKey;
 
-  if (fontSizeLevel == 1) {
+  if (fontSizeLevel == 0) {
     const int scale = 1;
     const int virtualWidth = kDisplayWidth;
     const int virtualHeight = kDisplayHeight;
-    const int mediumHeight = mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
-    const int textY = std::max(0, (virtualHeight - mediumHeight) / 2);
+    const int largeHeight = mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
+    const int textY = std::max(0, (virtualHeight - largeHeight) / 2);
     const int focusIndex = findFocusLetterIndex(word);
     const int currentX = rsvpStartX70(word, focusIndex, virtualWidth, false);
     const int anchorX = (virtualWidth * currentAnchorPercent()) / 100;
     const TextLayoutMetrics currentLayout = serif70WordLayout(word, focusIndex);
-    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaMedium);
+    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaLarge);
 
     clearVirtualBuffer(virtualWidth, virtualHeight);
-    drawRsvpAnchorGuide(anchorX, textY, mediumHeight);
+    drawRsvpAnchorGuide(anchorX, textY, largeHeight);
     if (!beforeText.isEmpty()) {
       const TextLayoutMetrics beforeLayout = serif70WordLayout(beforeText, -1);
       const int beforeX =
-          currentX + currentLayout.minX - kPhantomCurrentGapMedium - beforeLayout.maxX;
+          currentX + currentLayout.minX - kPhantomCurrentGapLarge - beforeLayout.maxX;
       drawSerif70TextAt(beforeText, beforeX, textY, phantomColor);
     }
     drawRsvp70WordAt(word, currentX, textY, focusIndex);
     if (!afterText.isEmpty()) {
       const TextLayoutMetrics afterLayout = serif70WordLayout(afterText, -1);
       const int afterX =
-          currentX + currentLayout.maxX + kPhantomCurrentGapMedium - afterLayout.minX;
+          currentX + currentLayout.maxX + kPhantomCurrentGapLarge - afterLayout.minX;
       drawSerif70TextAt(afterText, afterX, textY, phantomColor);
     }
     if (showFooter) {
@@ -2622,14 +2975,14 @@ void DisplayManager::renderWordTickerView(const std::vector<ContextWord> &words,
       std::max(0, virtualHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
   const uint16_t textColor = wordColor();
 
-  if (fontSizeLevel == 1) {
+  if (fontSizeLevel == 0) {
     auto layoutFor = [&](size_t index) { return serif70WordLayout(words[index].text, -1); };
     auto widthFor = [&](const TextLayoutMetrics &layout) { return textLayoutWidth(layout); };
 
-    const int gap = kWordTickerGapMedium;
-    const int mediumHeight =
+    const int gap = kWordTickerGapLarge;
+    const int largeHeight =
         mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(words[currentWordIndex].text));
-    const int textY = std::max(0, (virtualHeight - mediumHeight) / 2);
+    const int textY = std::max(0, (virtualHeight - largeHeight) / 2);
     const TextLayoutMetrics currentLayout = layoutFor(currentWordIndex);
     const int currentWidth = widthFor(currentLayout);
     const int currentLeftBase = (virtualWidth - currentWidth) / 2;
@@ -2642,7 +2995,7 @@ void DisplayManager::renderWordTickerView(const std::vector<ContextWord> &words,
 
     const int bandTop = std::max(0, textY - kWordTickerBandPadding);
     const int bandBottom =
-        std::min(virtualHeight, textY + mediumHeight + kWordTickerBandPadding);
+        std::min(virtualHeight, textY + largeHeight + kWordTickerBandPadding);
     if (canUseBandOnly) {
       fillVirtualRect(0, bandTop, virtualWidth, bandBottom - bandTop, backgroundColor());
     } else {
@@ -2820,7 +3173,7 @@ void DisplayManager::renderTypographyPreview(const String &beforeText, const Str
   drawTinyTextCentered(fitTinyText(title, maxLabelWidth, kTinyScale), titleY, wordColor(),
                        kTinyScale);
 
-  if (fontSizeLevel == 1) {
+  if (fontSizeLevel == 0) {
     const int textHeight = mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
     int textY = (textTop + textBottom - textHeight) / 2;
     textY = std::max(textTop, std::min(textY, textBottom - textHeight));
@@ -2828,20 +3181,20 @@ void DisplayManager::renderTypographyPreview(const String &beforeText, const Str
     const int currentX = rsvpStartX70(word, focusIndex, virtualWidth, false);
     const int anchorX = (virtualWidth * currentAnchorPercent()) / 100;
     const TextLayoutMetrics currentLayout = serif70WordLayout(word, focusIndex);
-    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaMedium);
+    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaLarge);
 
     drawRsvpAnchorGuide(anchorX, textY, textHeight);
     if (!beforeText.isEmpty()) {
       const TextLayoutMetrics beforeLayout = serif70WordLayout(beforeText, -1);
       const int beforeX =
-          currentX + currentLayout.minX - kPhantomCurrentGapMedium - beforeLayout.maxX;
+          currentX + currentLayout.minX - kPhantomCurrentGapLarge - beforeLayout.maxX;
       drawSerif70TextAt(beforeText, beforeX, textY, phantomColor);
     }
     drawRsvp70WordAt(word, currentX, textY, focusIndex);
     if (!afterText.isEmpty()) {
       const TextLayoutMetrics afterLayout = serif70WordLayout(afterText, -1);
       const int afterX =
-          currentX + currentLayout.maxX + kPhantomCurrentGapMedium - afterLayout.minX;
+          currentX + currentLayout.maxX + kPhantomCurrentGapLarge - afterLayout.minX;
       drawSerif70TextAt(afterText, afterX, textY, phantomColor);
     }
   } else {
@@ -2905,33 +3258,33 @@ void DisplayManager::renderPhantomRsvpWordWithWpm(const String &beforeText, cons
 
   lastRenderKey_ = renderKey;
 
-  if (fontSizeLevel == 1) {
+  if (fontSizeLevel == 0) {
     const int scale = 1;
     const int virtualWidth = kDisplayWidth;
     const int virtualHeight = kDisplayHeight;
-    const int mediumHeight = mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
-    const int textY = std::max(0, (virtualHeight - mediumHeight) / 2);
+    const int largeHeight = mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
+    const int textY = std::max(0, (virtualHeight - largeHeight) / 2);
     const int wpmY =
         std::max(0, virtualHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
     const int focusIndex = findFocusLetterIndex(word);
     const int currentX = rsvpStartX70(word, focusIndex, virtualWidth, false);
     const int anchorX = (virtualWidth * currentAnchorPercent()) / 100;
     const TextLayoutMetrics currentLayout = serif70WordLayout(word, focusIndex);
-    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaMedium);
+    const uint16_t phantomColor = blendOverBackground(wordColor(), kPhantomAlphaLarge);
 
     clearVirtualBuffer(virtualWidth, virtualHeight);
-    drawRsvpAnchorGuide(anchorX, textY, mediumHeight);
+    drawRsvpAnchorGuide(anchorX, textY, largeHeight);
     if (!beforeText.isEmpty()) {
       const TextLayoutMetrics beforeLayout = serif70WordLayout(beforeText, -1);
       const int beforeX =
-          currentX + currentLayout.minX - kPhantomCurrentGapMedium - beforeLayout.maxX;
+          currentX + currentLayout.minX - kPhantomCurrentGapLarge - beforeLayout.maxX;
       drawSerif70TextAt(beforeText, beforeX, textY, phantomColor);
     }
     drawRsvp70WordAt(word, currentX, textY, focusIndex);
     if (!afterText.isEmpty()) {
       const TextLayoutMetrics afterLayout = serif70WordLayout(afterText, -1);
       const int afterX =
-          currentX + currentLayout.maxX + kPhantomCurrentGapMedium - afterLayout.minX;
+          currentX + currentLayout.maxX + kPhantomCurrentGapLarge - afterLayout.minX;
       drawSerif70TextAt(afterText, afterX, textY, phantomColor);
     }
     drawTinyTextCentered(wpmText, wpmY, focusColor(), kTinyScale);
