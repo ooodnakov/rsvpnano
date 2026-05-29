@@ -188,6 +188,7 @@ class App {
   void cycleHandednessMode(uint32_t nowMs);
   void togglePhantomWords(uint32_t nowMs);
   void cycleReaderFontSize(uint32_t nowMs);
+  void returnToFirmwareManager(uint32_t nowMs);
   void applyDisplayPreferences(uint32_t nowMs, bool rerender = true);
   void applyHandednessSettings(uint32_t nowMs, bool rerender = true);
   void applyTypographySettings(uint32_t nowMs, bool rerender = true);

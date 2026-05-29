@@ -1,5 +1,6 @@
 #include "app/App.h"
 
+#include <esp_partition.h>
 #include <esp_sleep.h>
 #include <esp_log.h>
 #include <WiFi.h>
@@ -97,6 +98,7 @@ enum MenuItem : size_t {
 #if RSVP_USB_TRANSFER_ENABLED
   MenuUsbTransfer,
 #endif
+  MenuFirmwareManager,
   MenuPowerOff,
   MenuItemCount,
 };
@@ -1507,6 +1509,42 @@ void App::cycleReaderFontSize(uint32_t nowMs) {
   applyDisplayPreferences(nowMs);
 }
 
+void App::returnToFirmwareManager(uint32_t nowMs) {
+  saveReadingPosition(true);
+  display_.renderStatus("Firmware", "Returning to manager", "Restarting");
+  delay(300);
+
+  const esp_partition_t *factory =
+      esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, nullptr);
+  if (factory == nullptr) {
+    display_.renderStatus("Firmware", "Manager not found", "No factory partition");
+    delay(1600);
+    renderMenu();
+    return;
+  }
+
+  const esp_partition_t *otaData =
+      esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_OTA, nullptr);
+  if (otaData == nullptr) {
+    display_.renderStatus("Firmware", "Return failed", "No otadata partition");
+    delay(1600);
+    renderMenu();
+    return;
+  }
+
+  const esp_err_t err = esp_partition_erase_range(otaData, 0, otaData->size);
+  if (err != ESP_OK) {
+    char line[32];
+    snprintf(line, sizeof(line), "err 0x%lx", static_cast<unsigned long>(err));
+    display_.renderStatus("Firmware", "Return failed", line);
+    delay(1600);
+    renderMenu();
+    return;
+  }
+
+  ESP.restart();
+}
+
 bool App::updateBatteryStatus(uint32_t nowMs, bool force) {
   if (!force) {
     const bool lowBatteryKnown =
@@ -2527,6 +2565,9 @@ void App::moveMenuSelection(int direction) {
         selectedLabel = uiText(UiText::UsbTransfer);
         break;
 #endif
+      case MenuFirmwareManager:
+        selectedLabel = "Firmware manager";
+        break;
       case MenuPowerOff:
         selectedLabel = uiText(UiText::PowerOff);
         break;
@@ -2603,6 +2644,9 @@ void App::selectMenuItem(uint32_t nowMs) {
       enterUsbTransfer(nowMs);
       return;
 #endif
+    case MenuFirmwareManager:
+      returnToFirmwareManager(nowMs);
+      return;
     case MenuChapters:
       openChapterPicker();
       return;
@@ -5121,6 +5165,7 @@ void App::renderMainMenu() {
 #if RSVP_USB_TRANSFER_ENABLED
   items.push_back(uiText(UiText::UsbTransfer));
 #endif
+  items.push_back("Firmware manager");
   items.push_back(uiText(UiText::PowerOff));
   display_.renderMenu(items, menuSelectedIndex_);
 }
